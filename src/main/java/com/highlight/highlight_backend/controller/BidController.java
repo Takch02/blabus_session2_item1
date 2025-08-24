@@ -20,11 +20,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 입찰 관련 컨트롤러
@@ -41,7 +46,46 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "입찰 및 경매 상태", description = "입찰 참여, 입찰 내역 조회, 경매 상태 조회, 낙찰 내역 API")
 public class BidController {
     
+    // 정렬 필드 매핑 (DTO 필드명 -> 엔티티 필드명)
+    private static final Map<String, String> SORT_FIELD_MAPPING = new HashMap<>();
+    static {
+        SORT_FIELD_MAPPING.put("bidTime", "createdAt");
+        SORT_FIELD_MAPPING.put("bidAmount", "bidAmount");
+        SORT_FIELD_MAPPING.put("createdAt", "createdAt");
+    }
+    
     private final BidService bidService;
+    
+    /**
+     * 정렬 필드 매핑 처리
+     * DTO 필드명을 엔티티 필드명으로 변환합니다.
+     * 
+     * @param pageable 원본 Pageable 객체
+     * @return 매핑된 Pageable 객체
+     */
+    private Pageable mapSortFields(Pageable pageable) {
+        if (pageable.getSort().isEmpty()) {
+            return pageable;
+        }
+        
+        Sort mappedSort = Sort.unsorted();
+        boolean hasMappedFields = false;
+        
+        for (Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            String mappedProperty = SORT_FIELD_MAPPING.getOrDefault(property, property);
+            
+            Sort.Direction direction = order.getDirection();
+            mappedSort = mappedSort.and(Sort.by(direction, mappedProperty));
+            hasMappedFields = true;
+        }
+        
+        if (hasMappedFields) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mappedSort);
+        }
+        
+        return pageable;
+    }
     
     /**
      * 입찰 참여
@@ -110,7 +154,10 @@ public class BidController {
         
         log.info("GET /api/auctions/{}/bids - 경매 입찰 내역 조회 (익명)", auctionId);
         
-        Page<BidResponseDto> response = bidService.getAuctionBids(auctionId, pageable);
+        // 정렬 필드 매핑 처리 (bidTime -> createdAt)
+        Pageable mappedPageable = mapSortFields(pageable);
+        
+        Page<BidResponseDto> response = bidService.getAuctionBids(auctionId, mappedPageable);
         
         return ResponseUtils.success(response, "입찰 내역 조회가 완료되었습니다.");
     }
@@ -135,7 +182,10 @@ public class BidController {
         Long userId = AuthenticationUtils.extractUserId(authentication);
         log.info("GET /api/auctions/{}/bids/with-user - 경매 입찰 내역 조회 (본인 강조, 사용자: {})", auctionId, userId);
         
-        Page<BidResponseDto> response = bidService.getAuctionBidsWithUser(auctionId, userId, pageable);
+        // 정렬 필드 매핑 처리 (bidTime -> createdAt)
+        Pageable mappedPageable = mapSortFields(pageable);
+        
+        Page<BidResponseDto> response = bidService.getAuctionBidsWithUser(auctionId, userId, mappedPageable);
         
         return ResponseUtils.success(response, "입찰 내역 조회가 완료되었습니다.");
     }
