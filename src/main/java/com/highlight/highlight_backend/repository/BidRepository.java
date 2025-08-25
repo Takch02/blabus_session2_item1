@@ -35,11 +35,31 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             Pageable pageable);
     
     /**
-     * 특정 경매의 입찰 내역 조회 (입찰가 높은순)
+     * 특정 경매의 입찰 내역 조회 (입찰가 높은순) - 전체 입찰 내역
+     * 관리자용으로 사용되며, 모든 입찰 기록을 반환합니다.
      */
     @Query("SELECT b FROM Bid b " +
            "WHERE b.auction = :auction " +
            "AND b.status != 'CANCELLED' " +
+           "ORDER BY b.bidAmount DESC, b.createdAt ASC")
+    Page<Bid> findAllBidsByAuctionOrderByBidAmountDesc(
+            @Param("auction") Auction auction, 
+            Pageable pageable);
+    
+    /**
+     * 특정 경매의 사용자별 최신 입찰 조회 (입찰가 높은순)
+     * 각 사용자의 최신 입찰 1개씩만 반환하여 일반적인 경매 UX를 제공합니다.
+     */
+    @Query("SELECT b FROM Bid b " +
+           "WHERE b.auction = :auction " +
+           "AND b.status != 'CANCELLED' " +
+           "AND b.id IN (" +
+           "    SELECT MAX(b2.id) FROM Bid b2 " +
+           "    WHERE b2.auction = :auction " +
+           "    AND b2.user = b.user " +
+           "    AND b2.status != 'CANCELLED' " +
+           "    GROUP BY b2.user" +
+           ") " +
            "ORDER BY b.bidAmount DESC, b.createdAt ASC")
     Page<Bid> findBidsByAuctionOrderByBidAmountDesc(
             @Param("auction") Auction auction, 

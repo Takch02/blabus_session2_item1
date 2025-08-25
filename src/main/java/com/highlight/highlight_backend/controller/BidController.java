@@ -126,16 +126,16 @@ public class BidController {
     }
     
     /**
-     * 경매 입찰 내역 조회 (익명 처리)
+     * 경매 입찰 내역 조회 (익명 처리) - 사용자별 최신 입찰만 표시
      * 
      * @param auctionId 경매 ID
      * @param pageable 페이징 정보
-     * @return 입찰 내역 목록
+     * @return 입찰 내역 목록 (사용자별 최신 입찰)
      */
     @GetMapping("/auctions/{auctionId}/bids")
     @Operation(
         summary = "경매 입찰 내역 조회 (익명)", 
-        description = "특정 경매의 입찰 내역을 익명으로 조회합니다. 입찰자 정보는 마스킹되어 표시됩니다."
+        description = "특정 경매의 입찰 내역을 익명으로 조회합니다. 각 사용자의 최신 입찰만 표시되며, 입찰자 정보는 마스킹되어 표시됩니다."
     )
     @ApiResponses({
         @ApiResponse(
@@ -163,15 +163,15 @@ public class BidController {
     }
     
     /**
-     * 경매 입찰 내역 조회 (본인 입찰 강조)
+     * 경매 입찰 내역 조회 (본인 입찰 강조) - 사용자별 최신 입찰만 표시
      * 
      * @param auctionId 경매 ID
      * @param pageable 페이징 정보
      * @param authentication 현재 로그인한 사용자 정보
-     * @return 입찰 내역 목록 (본인 입찰 강조)
+     * @return 입찰 내역 목록 (사용자별 최신 입찰, 본인 입찰 강조)
      */
     @GetMapping("/auctions/{auctionId}/bids/with-user")
-    @Operation(summary = "경매 입찰 내역 조회 (본인 강조)", description = "특정 경매의 입찰 내역을 조회하며 본인 입찰을 강조합니다.")
+    @Operation(summary = "경매 입찰 내역 조회 (본인 강조)", description = "특정 경매의 입찰 내역을 조회하며 본인 입찰을 강조합니다. 각 사용자의 최신 입찰만 표시됩니다.")
     public ResponseEntity<ResponseDto<Page<BidResponseDto>>> getAuctionBidsWithUser(
             @Parameter(description = "경매 ID", required = true)
             @PathVariable Long auctionId,
@@ -188,6 +188,43 @@ public class BidController {
         Page<BidResponseDto> response = bidService.getAuctionBidsWithUser(auctionId, userId, mappedPageable);
         
         return ResponseUtils.success(response, "입찰 내역 조회가 완료되었습니다.");
+    }
+    
+    /**
+     * 경매 전체 입찰 내역 조회 (관리자용)
+     * 
+     * @param auctionId 경매 ID
+     * @param pageable 페이징 정보
+     * @return 모든 입찰 내역 목록
+     */
+    @GetMapping("/admin/auctions/{auctionId}/bids/all")
+    @Operation(
+        summary = "경매 전체 입찰 내역 조회 (관리자)", 
+        description = "특정 경매의 모든 입찰 내역을 조회합니다. 관리자용으로 사용자별 중복 입찰도 모두 표시됩니다."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200", 
+            description = "전체 입찰 내역 조회 성공",
+            content = @Content(schema = @Schema(implementation = ResponseDto.class))
+        ),
+        @ApiResponse(responseCode = "404", description = "경매를 찾을 수 없음"),
+        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<ResponseDto<Page<BidResponseDto>>> getAllAuctionBids(
+            @Parameter(description = "입찰 내역을 조회할 경매의 고유 ID", required = true, example = "1")
+            @PathVariable Long auctionId,
+            @Parameter(description = "페이징 정보 (기본 20개)")
+            @PageableDefault(size = 20) Pageable pageable) {
+        
+        log.info("GET /admin/auctions/{}/bids/all - 경매 전체 입찰 내역 조회 (관리자)", auctionId);
+        
+        // 정렬 필드 매핑 처리
+        Pageable mappedPageable = mapSortFields(pageable);
+        
+        Page<BidResponseDto> response = bidService.getAllAuctionBids(auctionId, mappedPageable);
+        
+        return ResponseUtils.success(response, "전체 입찰 내역 조회가 완료되었습니다.");
     }
     
     /**
