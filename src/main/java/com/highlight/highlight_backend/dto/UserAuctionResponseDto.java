@@ -37,6 +37,7 @@ public class UserAuctionResponseDto {
     private LocalDateTime endTime; // 종료 시간
     private LocalDateTime startTime;
     private String auctionStatus;  // 현재 경매 상태
+    private Boolean isPremium;
 
     /**
      * Auction 엔티티로부터 UserAuctionResponseDto를 생성합니다.
@@ -66,6 +67,7 @@ public class UserAuctionResponseDto {
                 .endTime(auction.getScheduledEndTime())
                 .startTime(auction.getScheduledStartTime())
                 .auctionStatus(auction.getStatus().name()) // Enum 값을 문자열로 변환
+                .isPremium(product.getIsPremium())
                 .build();
     }
 }
