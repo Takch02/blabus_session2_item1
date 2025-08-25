@@ -53,6 +53,7 @@ public class ProductService {
     private final UserProductViewRepository userProductViewRepository;
     private final ProductAssociationRepository productAssociationRepository;
     private final AuctionRepository auctionRepository;
+    private final BidRepository bidRepository;
     
     /**
      * 상품 등록
@@ -405,7 +406,9 @@ public class ProductService {
                 .map(association -> {
                     Product targetProduct = association.getTargetProduct();
                     Auction activeAuction = auctionRepository.findActiveAuctionByProductId(targetProduct.getId()).orElse(null);
-                    return ViewTogetherProductResponseDto.fromProductWithAuction(targetProduct, activeAuction, association.getAssociationScore());
+                    // 사용자별 최신 입찰 수 계산
+                    Integer bidCount = activeAuction != null ? bidRepository.countBidsByAuction(activeAuction).intValue() : 0;
+                    return ViewTogetherProductResponseDto.fromProductWithCalculatedCount(targetProduct, activeAuction, association.getAssociationScore(), bidCount);
                 })
                 .toList();
         }
@@ -465,7 +468,9 @@ public class ProductService {
                     if (hasAuction) {
                         Auction activeAuction = auctionRepository.findActiveAuctionByProductId(targetProductId).orElse(null);
                         BigDecimal score = BigDecimal.valueOf(productScores.get(targetProductId));
-                        recommendations.add(ViewTogetherProductResponseDto.fromProductWithAuction(product, activeAuction, score));
+                        // 사용자별 최신 입찰 수 계산
+                        Integer bidCount = activeAuction != null ? bidRepository.countBidsByAuction(activeAuction).intValue() : 0;
+                        recommendations.add(ViewTogetherProductResponseDto.fromProductWithCalculatedCount(product, activeAuction, score, bidCount));
                     }
                 }
             }
@@ -512,7 +517,8 @@ public class ProductService {
             
             if (activeAuction != null) {
                 // 진행 중인 경매가 있는 상품 우선 추가
-                ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithAuction(product, activeAuction, BigDecimal.ZERO);
+                Integer bidCount = bidRepository.countBidsByAuction(activeAuction).intValue();
+                ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithCalculatedCount(product, activeAuction, BigDecimal.ZERO, bidCount);
                 recommendations.add(dto);
                 
                 if (recommendations.size() >= size) {
@@ -522,7 +528,8 @@ public class ProductService {
                 // 진행 중인 경매가 없으면 예약된 경매 확인
                 Auction scheduledAuction = auctionRepository.findActiveOrScheduledAuctionByProductId(product.getId()).orElse(null);
                 if (scheduledAuction != null) {
-                    ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithAuction(product, scheduledAuction, BigDecimal.ZERO);
+                    Integer bidCount = bidRepository.countBidsByAuction(scheduledAuction).intValue();
+                    ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithCalculatedCount(product, scheduledAuction, BigDecimal.ZERO, bidCount);
                     scheduledRecommendations.add(dto);
                 }
             }
@@ -550,7 +557,8 @@ public class ProductService {
                 
                 Auction activeAuction = auctionRepository.findActiveAuctionByProductId(product.getId()).orElse(null);
                 if (activeAuction != null) {
-                    ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithAuction(product, activeAuction, BigDecimal.ZERO);
+                    Integer bidCount = bidRepository.countBidsByAuction(activeAuction).intValue();
+                    ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithCalculatedCount(product, activeAuction, BigDecimal.ZERO, bidCount);
                     recommendations.add(dto);
                     
                     if (recommendations.size() >= size) {
@@ -559,7 +567,8 @@ public class ProductService {
                 } else {
                     Auction scheduledAuction = auctionRepository.findActiveOrScheduledAuctionByProductId(product.getId()).orElse(null);
                     if (scheduledAuction != null) {
-                        ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithAuction(product, scheduledAuction, BigDecimal.ZERO);
+                        Integer bidCount = bidRepository.countBidsByAuction(scheduledAuction).intValue();
+                        ViewTogetherProductResponseDto dto = ViewTogetherProductResponseDto.fromProductWithCalculatedCount(product, scheduledAuction, BigDecimal.ZERO, bidCount);
                         recommendations.add(dto);
                         
                         if (recommendations.size() >= size) {

@@ -1,6 +1,9 @@
 package com.highlight.highlight_backend.dto;
 
 import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.domain.Seller;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -205,6 +208,68 @@ public class WinBidDetailResponseDto {
             auction.getActualEndTime() != null ? auction.getActualEndTime() : auction.getScheduledEndTime(),
             auction.getTotalBids(),
             auction.getTotalBidders(),
+            auction.getBidUnit(),
+            auction.getShippingFee(),
+            auction.getStatus() != null ? auction.getStatus().name() : null
+        );
+        
+        return new WinBidDetailResponseDto(
+            bid.getId(),
+            auction.getId(),
+            bid.getBidAmount(),
+            bid.getCreatedAt(),
+            productInfo,
+            sellerInfo,
+            auctionInfo
+        );
+    }
+    
+    /**
+     * 입찰과 계산된 통계로부터 낙찰 상세 정보 DTO를 생성합니다.
+     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
+     * 
+     * @param bid 낙찰 입찰
+     * @param calculatedTotalBids 실제 계산된 입찰 수 (사용자별 최신 기준)
+     * @param calculatedTotalBidders 실제 계산된 입찰자 수
+     * @return 낙찰 상세 정보 DTO
+     */
+    public static WinBidDetailResponseDto fromWithCalculatedStats(Bid bid, Integer calculatedTotalBids, Integer calculatedTotalBidders) {
+        Auction auction = bid.getAuction();
+        Product product = auction.getProduct();
+        Seller seller = product.getSeller();
+        
+        // 상품 정보 생성 (기존 from() 메서드와 동일한 구조)
+        ProductInfo productInfo = new ProductInfo(
+            product.getId(),
+            product.getProductName(),
+            product.getShortDescription(),
+            product.getBrand(),
+            product.getCategory() != null ? product.getCategory().name() : null,
+            product.getMaterial(),
+            product.getSize(),
+            product.getManufactureYear(),
+            product.getRank() != null ? product.getRank().name() : null,
+            product.getStatus() != null ? product.getStatus().name() : null,
+            product.getPrimaryImage() != null ? product.getPrimaryImage().getImageUrl() : null,
+            auction.getStartPrice()
+        );
+        
+        // 판매자 정보 생성
+        SellerInfo sellerInfo = new SellerInfo(
+            seller != null ? seller.getId() : null,
+            seller != null ? seller.getSellerName() : "NAFAL",
+            seller != null ? seller.getRating().doubleValue() : 4.8,
+            seller != null ? seller.getSalesCount().intValue() : 0,
+            seller != null ? seller.getPhoneNumber() : null,
+            seller != null ? seller.getEmail() : null
+        );
+        
+        // 경매 정보 생성 (계산된 통계 사용)
+        AuctionInfo auctionInfo = new AuctionInfo(
+            auction.getActualStartTime() != null ? auction.getActualStartTime() : auction.getScheduledStartTime(),
+            auction.getActualEndTime() != null ? auction.getActualEndTime() : auction.getScheduledEndTime(),
+            calculatedTotalBids, // 계산된 값 사용
+            calculatedTotalBidders, // 계산된 값 사용
             auction.getBidUnit(),
             auction.getShippingFee(),
             auction.getStatus() != null ? auction.getStatus().name() : null

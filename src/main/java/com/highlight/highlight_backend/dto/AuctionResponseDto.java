@@ -212,4 +212,43 @@ public class AuctionResponseDto {
             auction.getUpdatedAt()
         );
     }
+    
+    /**
+     * 경매 엔티티와 계산된 통계로부터 AuctionResponseDto를 생성합니다.
+     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
+     * 
+     * @param auction 원본 Auction 엔티티
+     * @param calculatedTotalBidders 실제 계산된 입찰자 수
+     * @param calculatedTotalBids 실제 계산된 입찰 수 (사용자별 최신 기준)
+     * @return 변환된 DTO
+     */
+    public static AuctionResponseDto fromWithCalculatedStats(Auction auction, Integer calculatedTotalBidders, Integer calculatedTotalBids) {
+        return AuctionResponseDto.builder()
+                .auctionId(auction.getId())
+                .product(ProductResponseDto.from(auction.getProduct()))
+                .status(auction.getStatus())
+                .statusDescription(auction.getStatus().getDescription())
+                .scheduledStartTime(auction.getScheduledStartTime())
+                .scheduledEndTime(auction.getScheduledEndTime())
+                .actualStartTime(auction.getActualStartTime())
+                .actualEndTime(auction.getActualEndTime())
+                .startPrice(auction.getStartPrice())
+                .currentHighestBid(auction.getCurrentHighestBid())
+                .buyItNowPrice(auction.getBuyItNowPrice())
+                .minimumBid(auction.getMinimumBid())
+                .maxBid(auction.getMaxBid())
+                .bidUnit(auction.getBidUnit())
+                .shippingFee(auction.getShippingFee())
+                .isPickupAvailable(auction.getIsPickupAvailable())
+                .totalBidders(calculatedTotalBidders) // 계산된 값 사용
+                .totalBids(calculatedTotalBids) // 계산된 값 사용
+                .createdBy(auction.getCreatedBy())
+                .startedBy(auction.getStartedBy())
+                .endedBy(auction.getEndedBy())
+                .endReason(auction.getEndReason())
+                .description(auction.getDescription())
+                .createdAt(auction.getCreatedAt())
+                .updatedAt(auction.getUpdatedAt())
+                .build();
+    }
 }

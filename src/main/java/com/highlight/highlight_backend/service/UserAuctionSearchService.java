@@ -4,6 +4,7 @@ import com.highlight.highlight_backend.domain.Auction;
 import com.highlight.highlight_backend.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.repository.user.UserAuctionRepository;
+import com.highlight.highlight_backend.repository.BidRepository;
 import com.highlight.highlight_backend.repository.spec.AuctionSpecs; // import 추가
 import lombok.RequiredArgsConstructor; // AllArgsConstructor 대신 사용
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ import java.math.RoundingMode;
 public class UserAuctionSearchService {
 
     private final UserAuctionRepository userAuctionRepository;
+    private final BidRepository bidRepository;
 
     /**
      * 필터링, 정렬할 값을 가져오고 정렬한다.
@@ -71,8 +73,12 @@ public class UserAuctionSearchService {
         // 3. Repository 호출
         Page<Auction> auctionPage = userAuctionRepository.findAll(spec, newPageable);
 
-        // 4. DTO로 변환하여 반환
-        return auctionPage.map(UserAuctionResponseDto::from);
+        // 4. DTO로 변환하여 반환 (사용자별 최신 입찰 기준 통계 적용)
+        return auctionPage.map(auction -> {
+            // 각 경매의 실제 입찰 수를 계산 (사용자별 최신 기준)
+            Long bidCount = bidRepository.countBidsByAuction(auction);
+            return UserAuctionResponseDto.fromWithCalculatedCount(auction, bidCount.intValue());
+        });
     }
 
     private Sort getSort(String sortCode) {

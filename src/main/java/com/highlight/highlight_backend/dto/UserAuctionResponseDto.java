@@ -70,4 +70,38 @@ public class UserAuctionResponseDto {
                 .isPremium(product.getIsPremium())
                 .build();
     }
+    
+    /**
+     * Auction 엔티티와 계산된 입찰 수로부터 UserAuctionResponseDto를 생성합니다.
+     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
+     * 
+     * @param auction 원본 Auction 엔티티
+     * @param calculatedBidCount 실제 계산된 입찰 수 (사용자별 최신 기준)
+     * @return 변환된 DTO
+     */
+    public static UserAuctionResponseDto fromWithCalculatedCount(Auction auction, Integer calculatedBidCount) {
+        Product product = auction.getProduct();
+        List<ProductImage> images = product.getImages();
+
+        // 썸네일 이미지를 가져옵니다. 이미지가 없으면 null 처리.
+        String thumbnailUrl = (images != null && !images.isEmpty()) ? images.get(0).getImageUrl() : null;
+
+        return UserAuctionResponseDto.builder()
+                // Product 정보
+                .auctionId(auction.getId())
+                .productId(product.getId()) 
+                .thumbnailUrl(thumbnailUrl)
+                .productName(product.getProductName())
+                .brand(product.getBrand())
+                // Auction 정보
+                .startPrice(auction.getStartPrice())
+                .buyNowPrice(auction.getBuyItNowPrice())
+                .currentPrice(auction.getCurrentHighestBid())
+                .minimumBid(auction.getStartPrice())
+                .bidCount(calculatedBidCount) // 계산된 값 사용
+                .endTime(auction.getScheduledEndTime())
+                .startTime(auction.getScheduledStartTime())
+                .auctionStatus(auction.getStatus().name()) // Enum 값을 문자열로 변환
+                .build();
+    }
 }

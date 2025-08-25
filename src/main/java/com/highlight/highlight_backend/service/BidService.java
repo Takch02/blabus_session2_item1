@@ -261,8 +261,12 @@ public class BidService {
             throw new BusinessException(AuthErrorCode.ACCESS_DENIED);
         }
         
-        // 4. 상세 정보 반환
-        return WinBidDetailResponseDto.from(bid);
+        // 4. 상세 정보 반환 (사용자별 최신 입찰 기준 통계 적용)
+        Auction auction = bid.getAuction();
+        Integer calculatedTotalBids = bidRepository.countBidsByAuction(auction).intValue();
+        Integer calculatedTotalBidders = bidRepository.countDistinctBiddersByAuction(auction).intValue();
+        
+        return WinBidDetailResponseDto.fromWithCalculatedStats(bid, calculatedTotalBids, calculatedTotalBidders);
     }
     
     /**

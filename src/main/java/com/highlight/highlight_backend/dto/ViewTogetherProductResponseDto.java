@@ -180,6 +180,35 @@ public class ViewTogetherProductResponseDto {
                 .associationScore(associationScore)
                 .build();
     }
+    
+    /**
+     * Product, Auction, 연관도 점수, 계산된 입찰 수로부터 DTO 생성
+     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
+     * 
+     * @param product 상품 엔티티
+     * @param auction 경매 엔티티 (null 가능)
+     * @param associationScore 연관도 점수
+     * @param calculatedBidCount 실제 계산된 입찰 수 (사용자별 최신 기준)
+     * @return ViewTogetherProductResponseDto
+     */
+    public static ViewTogetherProductResponseDto fromProductWithCalculatedCount(
+            Product product, Auction auction, BigDecimal associationScore, Integer calculatedBidCount) {
+        return ViewTogetherProductResponseDto.builder()
+                .productId(product.getId())
+                .auctionId(auction.getId())
+                .productName(product.getProductName())
+                .category(product.getCategory() != null ? product.getCategory().name() : null)
+                .primaryImageUrl(product.getPrimaryImage() != null ? 
+                    product.getPrimaryImage().getImageUrl() : null)
+                .currentHighestBid(auction != null ? auction.getCurrentHighestBid() : null)
+                .buyNowPrice(auction != null ? auction.getBuyItNowPrice() : null)
+                .brand(product.getBrand())
+                .auctionStatus(getAuctionStatusForFrontend(auction))
+                .endTime(auction != null ? auction.getScheduledEndTime() : null)
+                .bidCount(calculatedBidCount != null ? calculatedBidCount : 0) // 계산된 값 사용
+                .associationScore(associationScore)
+                .build();
+    }
 
     /**
      * 상품의 활성 경매 조회
