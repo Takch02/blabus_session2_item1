@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.config;
+package com.highlight.highlight_backend.common.config;
 
 import com.highlight.highlight_backend.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
