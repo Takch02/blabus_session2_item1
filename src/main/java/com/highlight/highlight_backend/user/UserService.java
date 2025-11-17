@@ -1,18 +1,15 @@
-package com.highlight.highlight_backend.service;
+package com.highlight.highlight_backend.user;
 
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
 import com.highlight.highlight_backend.common.verification.VerificationService;
-import com.highlight.highlight_backend.domain.*;
-import com.highlight.highlight_backend.dto.*;
+import com.highlight.highlight_backend.domain.PhoneVerification;
+import com.highlight.highlight_backend.domain.User;
 import com.highlight.highlight_backend.exception.BusinessException;
-import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.SmsErrorCode;
+import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.repository.*;
 import com.highlight.highlight_backend.repository.user.UserRepository;
-import com.highlight.highlight_backend.user.UserLoginRequestDto;
-import com.highlight.highlight_backend.user.UserLoginResponseDto;
-import com.highlight.highlight_backend.user.UserSignUpRequestDto;
 import com.highlight.highlight_backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +31,8 @@ public class UserService {
     private final PhoneVerificationRepository phoneVerificationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final VerificationService verificationService;
 
+    private final VerificationService verificationService;
 
     /**
      * 회원가입
@@ -106,11 +103,6 @@ public class UserService {
                 .build();
     }
 
-    public UserDetailResponseDto getUserDetailsById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
-        return UserDetailResponseDto.from(user);
-    }
 
     @Transactional
     public void deleteUser(Long id) {
