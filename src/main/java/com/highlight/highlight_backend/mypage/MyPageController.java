@@ -1,10 +1,8 @@
-package com.highlight.highlight_backend.controller.user;
+package com.highlight.highlight_backend.mypage;
 
-import com.highlight.highlight_backend.domain.ProductImage;
 import com.highlight.highlight_backend.dto.MyPagePremiumImageResponseDto;
 import com.highlight.highlight_backend.dto.MyPageResponseDto;
 import com.highlight.highlight_backend.dto.ResponseDto;
-import com.highlight.highlight_backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,10 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 마이페이지 컨트롤러
+ * 마이페이지 컨트롤러 -> controller/mypageController 에서 domain을 따로 뺐습니다.
  *
- * @author 탁찬홍
- * @since 2025.08.21
  */
 @Slf4j
 @RestController
@@ -35,7 +31,7 @@ import java.util.List;
 @Tag(name = "마이페이지", description = "사용자 마이페이지 정보 조회 API")
 public class MyPageController {
 
-    private final UserService userService;
+    private final MypageService mypageService;
 
     /**
      * 마이페이지 정보 조회
@@ -64,7 +60,7 @@ public class MyPageController {
         Long currentUserId = getCurrentUserId(authentication);
         log.info("마이페이지 정보 조회 요청: 사용자ID={}", currentUserId);
         
-        MyPageResponseDto myPageInfo = userService.getMyPageInfo(currentUserId);
+        MyPageResponseDto myPageInfo = mypageService.getMyPageInfo(currentUserId);
         
         log.info("마이페이지 정보 조회 완료: 사용자ID={}, 등급={}, 참여횟수={}", 
                 currentUserId, myPageInfo.getRank(), myPageInfo.getParticipationCount());
@@ -81,7 +77,7 @@ public class MyPageController {
     ) {
         Long userId = getCurrentUserId(authentication);
 
-        List<MyPagePremiumImageResponseDto> response = userService.getMyPagePremiumImages(userId);
+        List<MyPagePremiumImageResponseDto> response = mypageService.getMyPagePremiumImages(userId);
 
 
         return ResponseEntity.ok(ResponseDto.success(response, "낙찰한 프리미엄 상품을 성공적으로 가져왔습니다."));

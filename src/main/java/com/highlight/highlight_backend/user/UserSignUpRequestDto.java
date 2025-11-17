@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.dto;
+package com.highlight.highlight_backend.user;
 
 import jakarta.validation.constraints.*;
 import lombok.Getter;

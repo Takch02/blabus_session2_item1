@@ -1,9 +1,8 @@
-package com.highlight.highlight_backend.controller.user;
+package com.highlight.highlight_backend.user;
 
-import com.highlight.highlight_backend.dto.*;
-import com.highlight.highlight_backend.dto.PhoneVerificationRequestCodeDto;
-import com.highlight.highlight_backend.dto.PhoneVerificationRequestDto;
-import com.highlight.highlight_backend.service.UserService;
+import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
+import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
+import com.highlight.highlight_backend.dto.ResponseDto;
 import com.highlight.highlight_backend.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,7 +15,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 유저 관리 controller
@@ -91,6 +93,10 @@ public class UserController {
         return ResponseEntity.ok(ResponseDto.success(response, "User 로그인에 성공하였습니다."));
     }
 
+
+    /**
+     * 휴대폰 인증 관련 end-point
+     */
     @PostMapping("/request-phone-verification")
     @Operation(summary = "휴대폰 인증 코드 요청", description = "사용자의 휴대폰 번호로 인증 코드를 발송합니다.")
     public ResponseEntity<ResponseDto<?>> requestPhoneVerification(@Valid @RequestBody PhoneVerificationRequestCodeDto requestDto) {
