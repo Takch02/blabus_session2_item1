@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.config;
+package com.highlight.highlight_backend.common.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

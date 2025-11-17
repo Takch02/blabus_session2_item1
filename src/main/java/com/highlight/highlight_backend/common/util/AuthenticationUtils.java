@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.util;
+package com.highlight.highlight_backend.common.util;
 
 import org.springframework.security.core.Authentication;
 

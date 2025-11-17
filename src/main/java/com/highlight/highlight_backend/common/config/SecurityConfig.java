@@ -1,6 +1,7 @@
-package com.highlight.highlight_backend.config;
+package com.highlight.highlight_backend.common.config;
 
-import com.highlight.highlight_backend.security.JwtAuthenticationFilter;
+
+import com.highlight.highlight_backend.common.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

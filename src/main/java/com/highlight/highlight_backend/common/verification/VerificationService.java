@@ -80,7 +80,7 @@ public class VerificationService {
         }
 
         // 인증번호 일치 여부 확인
-        if (!verification.getVerificationCode().equals(verificationCode) {
+        if (!verification.getVerificationCode().equals(verificationCode)) {
             throw new BusinessException(UserErrorCode.VERIFICATION_CODE_NOT_MATCH);
         }
 
