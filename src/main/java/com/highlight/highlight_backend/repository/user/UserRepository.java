@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.repository.user;
 
-import com.highlight.highlight_backend.domain.User;
+import com.highlight.highlight_backend.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
