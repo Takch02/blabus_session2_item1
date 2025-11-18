@@ -9,7 +9,6 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.SmsErrorCode;
 import com.highlight.highlight_backend.repository.*;
-import com.highlight.highlight_backend.repository.user.UserRepository;
 import com.highlight.highlight_backend.user.User;
 import com.highlight.highlight_backend.user.dto.UserDetailResponseDto;
 import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
