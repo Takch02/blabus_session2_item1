@@ -11,7 +11,7 @@ import com.highlight.highlight_backend.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
 import com.highlight.highlight_backend.repository.ProductImageRepository;
 import com.highlight.highlight_backend.repository.ProductRepository;
-import com.highlight.highlight_backend.repository.user.UserRepository;
+import com.highlight.highlight_backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

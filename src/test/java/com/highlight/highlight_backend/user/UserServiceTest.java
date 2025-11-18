@@ -4,7 +4,6 @@ import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.common.verification.VerificationService;
 import com.highlight.highlight_backend.domain.PhoneVerification;
 import com.highlight.highlight_backend.repository.PhoneVerificationRepository;
-import com.highlight.highlight_backend.repository.user.UserRepository;
 import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
 import com.highlight.highlight_backend.user.dto.UserLoginResponseDto;
 import com.highlight.highlight_backend.user.dto.UserSignUpRequestDto;
