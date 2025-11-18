@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.domain;
+package com.highlight.highlight_backend.admin.product.domian;
 
 import jakarta.persistence.*;
 import lombok.Getter;

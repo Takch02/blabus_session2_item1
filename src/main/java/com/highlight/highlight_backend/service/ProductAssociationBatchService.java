@@ -1,9 +1,9 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.domain.ProductAssociation;
 import com.highlight.highlight_backend.repository.ProductAssociationRepository;
-import com.highlight.highlight_backend.repository.ProductRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import com.highlight.highlight_backend.repository.UserProductViewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.domain;
 
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

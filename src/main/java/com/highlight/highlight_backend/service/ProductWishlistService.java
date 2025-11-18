@@ -6,7 +6,7 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.WishlistErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
-import com.highlight.highlight_backend.repository.ProductRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import com.highlight.highlight_backend.repository.ProductWishlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

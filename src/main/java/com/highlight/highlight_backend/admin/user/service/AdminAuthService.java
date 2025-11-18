@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.admin.user.service;
 
+import com.highlight.highlight_backend.admin.user.dto.AdminSignUpRequestDto;
 import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.admin.user.domain.Admin;
 import com.highlight.highlight_backend.admin.user.dto.LoginRequestDto;
@@ -86,6 +87,34 @@ public class AdminAuthService {
             "로그인이 성공적으로 완료되었습니다."
         );
     }
+
+    /**
+     * 관리자 간단 회원가입 (ID, 비밀번호만)
+     *
+     * @param signUpRequestDto 간단 회원가입 요청 데이터
+     */
+    @Transactional
+    public void simpleSignUp(AdminSignUpRequestDto signUpRequestDto) {
+        log.info("관리자 간단 회원가입 요청: {}", signUpRequestDto.getAdminId());
+
+        // 1. 중복 검사
+        if (adminRepository.existsByAdminId(signUpRequestDto.getAdminId())) {
+            throw new BusinessException(AdminErrorCode.DUPLICATE_ADMIN_ID);
+        }
+
+        // 2. 새 관리자 계정 생성
+        Admin newAdmin = new Admin();
+        newAdmin.setAdminId(signUpRequestDto.getAdminId());
+        newAdmin.setPassword(passwordEncoder.encode(signUpRequestDto.getPassword()));
+        newAdmin.setAdminName(signUpRequestDto.getAdminId()); // 이름은 ID와 동일하게 설정
+        newAdmin.setEmail(signUpRequestDto.getAdminId() + "@admin.com"); // 임시 이메일
+        newAdmin.setRole(Admin.AdminRole.ADMIN); // 기본적으로 일반 관리자
+        newAdmin.setActive(true);
+
+        Admin savedAdmin = adminRepository.save(newAdmin);
+
+        log.info("관리자 간단 회원가입 완료: {} (ID: {})", savedAdmin.getAdminName(), savedAdmin.getId());
+    }
     
     /**
      * 토큰 유효성 검증
@@ -96,16 +125,5 @@ public class AdminAuthService {
     public boolean validateToken(String token) {
         return jwtUtil.validateToken(token);
     }
-    
-    /**
-     * 토큰에서 관리자 정보 조회
-     * 
-     * @param token JWT 토큰
-     * @return 관리자 정보
-     */
-    public Admin getAdminFromToken(String token) {
-        Long adminId = jwtUtil.getUserId(token);
-        return adminRepository.findById(adminId)
-            .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
-    }
+
 }

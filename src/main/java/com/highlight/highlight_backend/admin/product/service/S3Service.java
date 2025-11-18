@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.service;
+package com.highlight.highlight_backend.admin.product.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,9 +19,7 @@ import java.util.UUID;
  * AWS S3 파일 업로드 서비스
  * 
  * 상품 이미지 업로드/삭제를 위한 S3 서비스입니다.
- * 
- * @author 전우선
- * @since 2025.08.16
+ *
  */
 @Slf4j
 @Service

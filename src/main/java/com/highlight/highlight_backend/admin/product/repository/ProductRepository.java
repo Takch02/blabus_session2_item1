@@ -1,6 +1,6 @@
-package com.highlight.highlight_backend.repository;
+package com.highlight.highlight_backend.admin.product.repository;
 
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
