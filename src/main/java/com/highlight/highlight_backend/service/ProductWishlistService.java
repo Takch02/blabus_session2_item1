@@ -8,7 +8,6 @@ import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import com.highlight.highlight_backend.repository.ProductRepository;
 import com.highlight.highlight_backend.repository.ProductWishlistRepository;
-import com.highlight.highlight_backend.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

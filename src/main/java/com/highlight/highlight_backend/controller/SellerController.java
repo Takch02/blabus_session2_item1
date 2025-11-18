@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.controller;
 
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.dto.SellerResponseDto;
 import com.highlight.highlight_backend.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;

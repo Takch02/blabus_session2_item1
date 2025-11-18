@@ -1,6 +1,5 @@
 package com.highlight.highlight_backend.repository;
 
-import com.highlight.highlight_backend.domain.Auction;
 import com.highlight.highlight_backend.domain.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.controller.dashboard;
 
 import com.highlight.highlight_backend.common.util.AuthenticationUtils;
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardItemResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardStatsResponseDto;
 import com.highlight.highlight_backend.service.AdminDashBoardService;

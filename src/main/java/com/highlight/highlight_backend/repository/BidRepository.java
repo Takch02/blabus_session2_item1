@@ -1,8 +1,8 @@
 package com.highlight.highlight_backend.repository;
 
 import com.highlight.highlight_backend.domain.Bid;
-import com.highlight.highlight_backend.domain.Auction;
-import com.highlight.highlight_backend.user.User;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.user.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

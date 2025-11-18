@@ -1,5 +1,9 @@
 package com.highlight.highlight_backend.service;
 
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.admin.user.domain.Admin;
+import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
 import com.highlight.highlight_backend.domain.*;
 import com.highlight.highlight_backend.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.dto.ProductResponseDto;

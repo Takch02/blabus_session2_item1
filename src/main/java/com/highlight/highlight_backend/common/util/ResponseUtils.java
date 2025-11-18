@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.common.util;
 
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import org.springframework.http.ResponseEntity;
 
 /**

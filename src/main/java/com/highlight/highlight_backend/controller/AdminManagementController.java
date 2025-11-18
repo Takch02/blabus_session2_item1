@@ -1,10 +1,10 @@
 package com.highlight.highlight_backend.controller;
 
-import com.highlight.highlight_backend.dto.AdminCreateRequestDto;
-import com.highlight.highlight_backend.dto.AdminResponseDto;
-import com.highlight.highlight_backend.dto.ResponseDto;
-import com.highlight.highlight_backend.repository.AdminRepository;
-import com.highlight.highlight_backend.service.AdminManagementService;
+import com.highlight.highlight_backend.admin.user.dto.AdminCreateRequestDto;
+import com.highlight.highlight_backend.admin.user.dto.AdminResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
+import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
+import com.highlight.highlight_backend.admin.user.service.AdminManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

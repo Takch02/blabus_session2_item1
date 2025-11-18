@@ -1,8 +1,8 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Bid;
-import com.highlight.highlight_backend.user.User;
+import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.dto.BidResponseDto;
@@ -14,9 +14,8 @@ import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.AuthErrorCode;
 import com.highlight.highlight_backend.exception.CommonErrorCode;
-import com.highlight.highlight_backend.repository.AuctionRepository;
+import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

@@ -5,7 +5,7 @@ import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.dto.BidResponseDto;
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.dto.WinBidDetailResponseDto;
 import com.highlight.highlight_backend.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.service.BidService;

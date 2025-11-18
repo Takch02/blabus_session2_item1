@@ -1,8 +1,7 @@
 package com.highlight.highlight_backend.dto;
 
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Bid;
-import com.highlight.highlight_backend.dto.PaymentPreviewDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
