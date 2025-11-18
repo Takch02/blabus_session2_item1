@@ -7,6 +7,7 @@ import com.highlight.highlight_backend.dto.ProductResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -55,6 +56,7 @@ public class UserAuctionDetailResponseDto {
     private BigDecimal maxBid;            // 최대 입찰가 (시스템용이면 제외 가능)
     private BigDecimal minimumBid;        // 최소 입찰 단위
 
+    @Setter
     private BigDecimal point;      // 적립 예정 포인트
     private Long productCount;     // 남은 수량? (문맥에 따라 ProductInfo로 이동 가능)
 
@@ -63,7 +65,6 @@ public class UserAuctionDetailResponseDto {
 
     // 3. 판매자(Seller) 정보
     private SellerInfo seller;
-
 
     /**
      * Auction 엔티티를 DTO로 변환하는 메인 팩토리 메서드

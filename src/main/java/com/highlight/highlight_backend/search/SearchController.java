@@ -5,7 +5,6 @@ import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
 import com.highlight.highlight_backend.service.ProductService;
-import com.highlight.highlight_backend.service.UserAuctionSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,10 +31,11 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "경매 목록 조회", description = "경매 목록 검색, 필터링, 상세조회 API")
 public class SearchController {
 
-    private final UserAuctionSearchService userAuctionSearchService;
+    private final SearchService searchService;
     private final ProductService productService;
 
     /**
+     * 메인 화면 및 카테고리 화면
      *
      * @param minPrice -> 최소 가격
      * @param maxPrice -> 최대 가격
@@ -83,7 +82,7 @@ public class SearchController {
 
         log.info("GET /api/public/products - 경매 목록 조회 요청 (상태: {}, 비로그인 사용자도 접근 가능)", status);
 
-        Page<UserAuctionResponseDto> response = userAuctionSearchService.getProductsFiltered(
+        Page<UserAuctionResponseDto> response = searchService.getProductsFiltered(
                 category, minPrice, maxPrice, brand, eventName, isPremium, status, sortCode, pageable);
 
         return ResponseEntity.ok(
@@ -91,6 +90,7 @@ public class SearchController {
     }
 
     /**
+     * 경매 상세 조회
      *
      * @param auctionId -> auction ID 를 받아서 조회
      * @return -> UserAuctionDetailResponseDto 를 반환
@@ -111,38 +111,18 @@ public class SearchController {
     })
     public ResponseEntity<ResponseDto<UserAuctionDetailResponseDto>> getAuctionDetail(
             @Parameter(description = "조회할 경매의 고유 ID", required = true, example = "1")
-            @PathVariable("auctionId") Long auctionId,
-            HttpServletRequest request
+            @PathVariable("auctionId") Long auctionId
     ) {
         log.info("GET /api/public/{} - 경매 목록 조회 요청 (비로그인 사용자도 접근 가능)", auctionId);
 
         // 1. 경매 상세 정보 조회
-        UserAuctionDetailResponseDto response = userAuctionSearchService.getProductsDetail(auctionId);
-
-        // 2. 상품 조회 이력 저장 (비동기로 처리하여 응답 속도에 영향 주지 않음)
-        try {
-            // UserAuctionDetailResponseDto에 productId 필드가 없으므로 일단 주석 처리
-            // TODO: DTO에 productId 추가하거나 다른 방법으로 productId 획득
-            Long productId = null; // response.getProductId();
-            if (productId != null) {
-                HttpSession session = request.getSession();
-                String sessionId = session.getId();
-                String ipAddress = getClientIpAddress(request);
-                String userAgent = request.getHeader("User-Agent");
-
-                // 현재는 비회원 사용자만 고려 (userId = null)
-                productService.recordProductView(productId, null, sessionId, ipAddress, userAgent);
-            }
-        } catch (Exception e) {
-            // 조회 이력 저장 실패가 상세 조회에 영향주지 않도록 로그만 남김
-            log.warn("상품 조회 이력 저장 실패: auctionId={}, error={}", auctionId, e.getMessage());
-        }
+        UserAuctionDetailResponseDto response = searchService.getProductsDetail(auctionId);
 
         return ResponseEntity.ok(ResponseDto.success(response, "경매 상세 목록을 성공적으로 불러왔습니다"));
     }
 
     /**
-     * 함께 본 상품 추천 조회
+     * 함께 본 상품 추천 조회 -> 보류
      *
      * @param productId 기준 상품 ID
      * @param size 추천 상품 개수 (기본값: 4)
@@ -179,31 +159,4 @@ public class SearchController {
                 ResponseDto.success(response, "함께 본 상품 추천을 성공적으로 조회했습니다."));
     }
 
-    /**
-     * 클라이언트 IP 주소 추출
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String[] headerNames = {
-                "X-Forwarded-For",
-                "X-Real-IP",
-                "Proxy-Client-IP",
-                "WL-Proxy-Client-IP",
-                "HTTP_X_FORWARDED_FOR",
-                "HTTP_X_FORWARDED",
-                "HTTP_X_CLUSTER_CLIENT_IP",
-                "HTTP_CLIENT_IP",
-                "HTTP_FORWARDED_FOR",
-                "HTTP_FORWARDED"
-        };
-
-        for (String headerName : headerNames) {
-            String ip = request.getHeader(headerName);
-            if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-                // 첫 번째 IP 주소 반환 (프록시 체인의 경우)
-                return ip.split(",")[0].trim();
-            }
-        }
-
-        return request.getRemoteAddr();
-    }
 }
