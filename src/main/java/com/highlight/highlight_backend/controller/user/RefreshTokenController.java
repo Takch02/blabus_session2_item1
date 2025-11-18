@@ -1,9 +1,9 @@
 package com.highlight.highlight_backend.controller.user;
 
+import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.dto.RefreshTokenRequestDto;
 import com.highlight.highlight_backend.dto.ResponseDto;
 import com.highlight.highlight_backend.dto.token.RefreshTokenResponseDto;
-import com.highlight.highlight_backend.util.JwtUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

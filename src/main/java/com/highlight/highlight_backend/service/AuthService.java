@@ -1,12 +1,12 @@
 package com.highlight.highlight_backend.service;
 
+import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.domain.Admin;
 import com.highlight.highlight_backend.dto.LoginRequestDto;
 import com.highlight.highlight_backend.dto.LoginResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.repository.AdminRepository;
-import com.highlight.highlight_backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;

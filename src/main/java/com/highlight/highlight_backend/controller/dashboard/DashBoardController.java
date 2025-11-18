@@ -1,11 +1,10 @@
 package com.highlight.highlight_backend.controller.dashboard;
 
+import com.highlight.highlight_backend.common.util.AuthenticationUtils;
 import com.highlight.highlight_backend.dto.ResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardItemResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardStatsResponseDto;
 import com.highlight.highlight_backend.service.AdminDashBoardService;
-import com.highlight.highlight_backend.util.AuthenticationUtils;
-import com.highlight.highlight_backend.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

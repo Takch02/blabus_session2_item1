@@ -1,9 +1,9 @@
 package com.highlight.highlight_backend.controller;
 
+import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.dto.RankingDashboardResponseDto;
 import com.highlight.highlight_backend.dto.ResponseDto;
 import com.highlight.highlight_backend.service.RankingService;
-import com.highlight.highlight_backend.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
