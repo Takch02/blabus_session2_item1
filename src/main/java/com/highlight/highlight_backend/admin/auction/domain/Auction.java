@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.admin.auction.domain;
 
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

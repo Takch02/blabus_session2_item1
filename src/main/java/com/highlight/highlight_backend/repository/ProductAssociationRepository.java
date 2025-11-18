@@ -1,6 +1,5 @@
 package com.highlight.highlight_backend.repository;
 
-import com.highlight.highlight_backend.domain.Product;
 import com.highlight.highlight_backend.domain.ProductAssociation;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;

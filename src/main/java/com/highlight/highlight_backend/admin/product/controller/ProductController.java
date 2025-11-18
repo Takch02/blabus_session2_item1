@@ -1,10 +1,11 @@
-package com.highlight.highlight_backend.controller;
+package com.highlight.highlight_backend.admin.product.controller;
 
-import com.highlight.highlight_backend.dto.ProductCreateRequestDto;
-import com.highlight.highlight_backend.dto.ProductResponseDto;
-import com.highlight.highlight_backend.dto.ProductUpdateRequestDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
+import com.highlight.highlight_backend.admin.product.service.ProductImageService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.service.ProductService;
+import com.highlight.highlight_backend.admin.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,13 +24,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
- * 상품 관리 컨트롤러
+ * 관리자 상품 관리 컨트롤러
  * 
  * 경매 진행 상품의 등록, 수정, 조회, 삭제 API를 제공합니다.
- * 
- * @author 전우선
- * @since 2025.08.13
  */
 @Slf4j
 @RestController
@@ -39,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ProductController {
     
     private final ProductService productService;
+    private final ProductImageService productImageService;
     
     /**
      * 상품 등록
@@ -191,42 +192,6 @@ public class ProductController {
             ResponseDto.success("SUCCESS", "상품이 성공적으로 삭제되었습니다.")
         );
     }
-
-    /**
-     * 관련 상품 추천 조회 (공개 API)
-     * 
-     * @param productId 기준 상품 ID
-     * @param size 추천 상품 개수 (기본 4개)
-     * @return 추천 상품 목록
-     */
-    @GetMapping("/{productId}/recommendations")
-    @Operation(
-        summary = "관련 상품 추천", 
-        description = "특정 상품과 관련된 추천 상품 목록을 조회합니다. 동일 카테고리나 브랜드의 상품을 우선적으로 추천합니다."
-    )
-    @ApiResponses({
-        @ApiResponse(
-            responseCode = "200", 
-            description = "추천 상품 조회 성공",
-            content = @Content(schema = @Schema(implementation = ResponseDto.class))
-        ),
-        @ApiResponse(responseCode = "404", description = "기준 상품을 찾을 수 없음"),
-        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    })
-    public ResponseEntity<ResponseDto<Page<ProductResponseDto>>> getRecommendedProducts(
-            @Parameter(description = "추천 기준이 되는 상품의 고유 ID", required = true, example = "1")
-            @PathVariable Long productId,
-            @Parameter(description = "추천 상품 개수", example = "4")
-            @RequestParam(defaultValue = "4") int size) {
-        
-        log.info("GET /api/products/{}/recommendations - 관련 상품 추천 조회", productId);
-        
-        Page<ProductResponseDto> response = productService.getRecommendedProducts(productId, size);
-        
-        return ResponseEntity.ok(
-            ResponseDto.success(response, "관련 상품을 성공적으로 조회했습니다.")
-        );
-    }
     
     /**
      * 상품 프리미엄 설정 변경
@@ -292,7 +257,7 @@ public class ProductController {
         log.info("POST /api/admin/products/{}/images - 상품 이미지 업로드 요청: {} 개 파일 (관리자: {})", 
                 productId, files.length, adminId);
         
-        java.util.List<String> imageUrls = productService.uploadProductImages(productId, files, adminId);
+        List<String> imageUrls = productImageService.uploadProductImages(productId, files, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(imageUrls, "이미지가 성공적으로 업로드되었습니다.")
@@ -318,7 +283,7 @@ public class ProductController {
         log.info("DELETE /api/admin/products/{}/images/{} - 상품 이미지 삭제 요청 (관리자: {})", 
                 productId, imageId, adminId);
         
-        productService.deleteProductImage(productId, imageId, adminId);
+        productImageService.deleteProductImage(productId, imageId, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success("SUCCESS", "이미지가 성공적으로 삭제되었습니다.")

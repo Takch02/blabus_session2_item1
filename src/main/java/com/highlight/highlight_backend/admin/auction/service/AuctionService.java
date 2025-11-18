@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.admin.auction.service;
 
 import com.highlight.highlight_backend.admin.user.domain.Admin;
 import com.highlight.highlight_backend.admin.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionEndRequestDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestDto;
@@ -18,7 +18,7 @@ import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.repository.ProductRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import com.highlight.highlight_backend.domain.Bid;
 import com.highlight.highlight_backend.service.AuctionSchedulerService;
 import com.highlight.highlight_backend.service.WebSocketService;

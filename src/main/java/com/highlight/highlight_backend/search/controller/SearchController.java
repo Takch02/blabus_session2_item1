@@ -1,11 +1,12 @@
 package com.highlight.highlight_backend.search.controller;
 
 import com.highlight.highlight_backend.common.config.ResponseDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.search.service.SearchService;
 import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.search.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
-import com.highlight.highlight_backend.service.ProductService;
+import com.highlight.highlight_backend.admin.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -121,8 +122,12 @@ public class SearchController {
         return ResponseEntity.ok(ResponseDto.success(response, "경매 상세 목록을 성공적으로 불러왔습니다"));
     }
 
+
+
+
+
     /**
-     * 함께 본 상품 추천 조회 -> 보류
+     * 함께 본 상품 추천 조회
      *
      * @param productId 기준 상품 ID
      * @param size 추천 상품 개수 (기본값: 4)
@@ -131,9 +136,7 @@ public class SearchController {
     @GetMapping("/{productId}/viewed-together")
     @Operation(
             summary = "함께 본 상품 추천 조회",
-            description = "특정 상품과 함께 조회된 다른 상품들을 사용자 행동 패턴 분석을 기반으로 추천합니다. " +
-                    "연관도 점수가 높은 순으로 정렬되며, 로그인 없이 접근 가능한 공개 API입니다. " +
-                    "추천 알고리즘은 동일 세션/사용자의 조회 패턴, 시간적 근접성, 카테고리 유사성을 종합적으로 고려합니다."
+            description = "카테고리 & 브렌드의 유사성으로 추천합니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -153,10 +156,46 @@ public class SearchController {
         log.info("GET /api/public/products/{}/viewed-together - 함께 본 상품 추천 조회 요청 (size: {})",
                 productId, size);
 
-        Page<ViewTogetherProductResponseDto> response = productService.getViewedTogetherProducts(productId, size);
+        Page<ViewTogetherProductResponseDto> response = searchService.getViewedTogetherProducts(productId, size);
 
         return ResponseEntity.ok(
                 ResponseDto.success(response, "함께 본 상품 추천을 성공적으로 조회했습니다."));
+    }
+
+    /**
+     * 관련 상품 추천 조회 (공개 API)
+     *
+     * @param productId 기준 상품 ID
+     * @param size 추천 상품 개수 (기본 4개)
+     * @return 추천 상품 목록
+     */
+    @GetMapping("/{productId}/recommendations")
+    @Operation(
+            summary = "관련 상품 추천",
+            description = "특정 상품과 관련된 추천 상품 목록을 조회합니다. 동일 카테고리나 브랜드의 상품을 우선적으로 추천합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "추천 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ResponseDto.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "기준 상품을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<ResponseDto<Page<ProductResponseDto>>> getRecommendedProducts(
+            @Parameter(description = "추천 기준이 되는 상품의 고유 ID", required = true, example = "1")
+            @PathVariable Long productId,
+            @Parameter(description = "추천 상품 개수", example = "4")
+            @RequestParam(defaultValue = "4") int size) {
+
+        log.info("GET /api/products/{}/recommendations - 관련 상품 추천 조회", productId);
+
+        Page<ProductResponseDto> response = searchService.getRecommendedProducts(productId, size);
+
+        return ResponseEntity.ok(
+                ResponseDto.success(response, "관련 상품을 성공적으로 조회했습니다.")
+        );
     }
 
 }

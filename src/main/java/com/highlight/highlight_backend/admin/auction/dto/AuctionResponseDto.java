@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.admin.auction.dto;
 
 import com.highlight.highlight_backend.admin.auction.domain.Auction;
-import com.highlight.highlight_backend.dto.ProductResponseDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

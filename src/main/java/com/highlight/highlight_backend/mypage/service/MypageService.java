@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.mypage.service;
 
 import com.highlight.highlight_backend.domain.Bid;
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.mypage.dto.MyPagePremiumImageResponseDto;
 import com.highlight.highlight_backend.mypage.dto.MyPageResponseDto;
@@ -9,8 +9,8 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.repository.ProductImageRepository;
-import com.highlight.highlight_backend.repository.ProductRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductImageRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

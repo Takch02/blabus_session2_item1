@@ -5,7 +5,6 @@ import com.highlight.highlight_backend.admin.user.dto.AdminSignUpRequestDto;
 import com.highlight.highlight_backend.admin.user.dto.LoginRequestDto;
 import com.highlight.highlight_backend.admin.user.dto.LoginResponseDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.admin.user.service.AdminManagementService;
 import com.highlight.highlight_backend.admin.user.service.AdminAuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,8 +33,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "관리자 계정 생성", description = "관리자 회원가입 및 로그인 API")
 public class AdminController {
-    
-    private final AdminManagementService adminManagementService;
+
     private final AdminAuthService authService;
     
     /**
@@ -64,7 +62,7 @@ public class AdminController {
             @Valid @RequestBody AdminSignUpRequestDto signUpRequestDto) {
         log.info("POST /api/admin/signup - 관리자 회원가입: {}", signUpRequestDto.getAdminId());
         
-        adminManagementService.simpleSignUp(signUpRequestDto);
+        authService.simpleSignUp(signUpRequestDto);
         
         return ResponseUtils.successWithMessage("관리자 계정이 성공적으로 생성되었습니다.");
     }

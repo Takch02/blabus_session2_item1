@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.dto;
 
 import com.highlight.highlight_backend.domain.Bid;
 import com.highlight.highlight_backend.admin.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.domain.Seller;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

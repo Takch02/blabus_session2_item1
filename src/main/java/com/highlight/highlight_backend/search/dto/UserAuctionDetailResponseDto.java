@@ -1,9 +1,9 @@
 package com.highlight.highlight_backend.search.dto;
 
 import com.highlight.highlight_backend.admin.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.domain.Seller;
-import com.highlight.highlight_backend.dto.ProductResponseDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

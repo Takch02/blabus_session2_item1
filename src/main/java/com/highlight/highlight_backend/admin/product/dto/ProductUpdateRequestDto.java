@@ -1,10 +1,9 @@
-package com.highlight.highlight_backend.dto;
+package com.highlight.highlight_backend.admin.product.dto;
 
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 /**

@@ -2,10 +2,10 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.admin.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Product;
+import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.repository.ProductRepository;
+import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
