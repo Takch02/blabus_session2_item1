@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.mypage;
 
 import com.highlight.highlight_backend.domain.Bid;
 import com.highlight.highlight_backend.domain.Product;
-import com.highlight.highlight_backend.domain.User;
+import com.highlight.highlight_backend.user.User;
 import com.highlight.highlight_backend.dto.MyPagePremiumImageResponseDto;
 import com.highlight.highlight_backend.dto.MyPageResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
