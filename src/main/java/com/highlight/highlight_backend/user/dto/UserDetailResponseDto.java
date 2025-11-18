@@ -1,6 +1,6 @@
-package com.highlight.highlight_backend.dto;
+package com.highlight.highlight_backend.user.dto;
 
-import com.highlight.highlight_backend.domain.User;
+import com.highlight.highlight_backend.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

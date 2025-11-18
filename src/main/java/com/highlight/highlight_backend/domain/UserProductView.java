@@ -91,10 +91,4 @@ public class UserProductView {
         this.userAgent = userAgent;
     }
 
-    /**
-     * 조회 지속 시간 업데이트
-     */
-    public void updateDuration(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
 }

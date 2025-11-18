@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.domain.Auction;
-import com.highlight.highlight_backend.dto.UserAuctionDetailResponseDto;
+import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.repository.user.UserAuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
