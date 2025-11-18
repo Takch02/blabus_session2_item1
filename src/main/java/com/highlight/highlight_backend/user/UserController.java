@@ -1,24 +1,26 @@
 package com.highlight.highlight_backend.user;
 
+import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
 import com.highlight.highlight_backend.dto.ResponseDto;
-import com.highlight.highlight_backend.util.ResponseUtils;
+import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
+import com.highlight.highlight_backend.user.dto.UserLoginResponseDto;
+import com.highlight.highlight_backend.user.dto.UserSignUpRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 유저 관리 controller
@@ -91,6 +93,34 @@ public class UserController {
         log.info("POST /api/public/login - User 로그인");
         UserLoginResponseDto response = userService.login(loginRequestDto);
         return ResponseEntity.ok(ResponseDto.success(response, "User 로그인에 성공하였습니다."));
+    }
+
+
+    @DeleteMapping("/delete")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "JWT 토큰으로 인증된 사용자가 본인 계정을 탈퇴(비활성화)합니다. 탈퇴 후에는 로그인할 수 없으며, 개인정보는 관련 법령에 따라 처리됩니다."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원 탈퇴 성공",
+                    content = @Content(schema = @Schema(implementation = ResponseDto.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "인증 실패 - 유효하지 않은 토큰"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "진행 중인 경매가 있어 탈퇴 불가"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<ResponseDto<?>> deleteUser(
+            @Parameter(description = "JWT 인증 정보", hidden = true)
+            Authentication authentication) {
+        log.info("DELETE /api/user/ - 회원 탈퇴");
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        userService.deleteUser(userId);
+        return ResponseEntity.ok(ResponseDto.success(null, "회원 탈퇴 처리가 완료되었습니다."));
     }
 
 

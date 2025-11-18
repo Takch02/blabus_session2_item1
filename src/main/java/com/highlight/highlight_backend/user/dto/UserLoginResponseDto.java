@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.user;
+package com.highlight.highlight_backend.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

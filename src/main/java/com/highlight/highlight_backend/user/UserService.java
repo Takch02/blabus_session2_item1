@@ -1,16 +1,18 @@
 package com.highlight.highlight_backend.user;
 
+import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
 import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
 import com.highlight.highlight_backend.common.verification.VerificationService;
 import com.highlight.highlight_backend.domain.PhoneVerification;
-import com.highlight.highlight_backend.domain.User;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.SmsErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.repository.*;
 import com.highlight.highlight_backend.repository.user.UserRepository;
-import com.highlight.highlight_backend.util.JwtUtil;
+import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
+import com.highlight.highlight_backend.user.dto.UserLoginResponseDto;
+import com.highlight.highlight_backend.user.dto.UserSignUpRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
