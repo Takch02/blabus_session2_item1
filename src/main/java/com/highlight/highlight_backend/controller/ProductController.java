@@ -3,7 +3,7 @@ package com.highlight.highlight_backend.controller;
 import com.highlight.highlight_backend.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.dto.ProductResponseDto;
 import com.highlight.highlight_backend.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

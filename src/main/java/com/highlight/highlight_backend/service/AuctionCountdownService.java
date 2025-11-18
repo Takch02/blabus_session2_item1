@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Auction;
-import com.highlight.highlight_backend.repository.AuctionRepository;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

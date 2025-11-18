@@ -1,9 +1,9 @@
 
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Product;
-import com.highlight.highlight_backend.repository.AuctionRepository;
+import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
 import com.highlight.highlight_backend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;

@@ -4,7 +4,7 @@ import com.highlight.highlight_backend.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.dto.PaymentPreviewDto;
 import com.highlight.highlight_backend.dto.PaymentResponseDto;
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

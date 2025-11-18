@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.search.dto;
 
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Product;
 import com.highlight.highlight_backend.domain.Seller;
 import com.highlight.highlight_backend.dto.ProductResponseDto;

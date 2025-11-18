@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.repository.spec;
 
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Product;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;

@@ -1,14 +1,14 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Admin;
-import com.highlight.highlight_backend.domain.Auction;
+import com.highlight.highlight_backend.admin.user.domain.Admin;
+import com.highlight.highlight_backend.admin.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.ProductImage;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardItemResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardStatsResponseDto;
 import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
-import com.highlight.highlight_backend.repository.AdminRepository;
-import com.highlight.highlight_backend.repository.AuctionRepository;
+import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
+import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;

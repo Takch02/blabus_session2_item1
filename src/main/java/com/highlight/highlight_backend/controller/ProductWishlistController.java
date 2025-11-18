@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.controller;
 
 import com.highlight.highlight_backend.dto.ProductWishlistResponseDto;
-import com.highlight.highlight_backend.dto.ResponseDto;
+import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.service.ProductWishlistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
