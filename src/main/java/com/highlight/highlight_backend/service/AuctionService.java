@@ -21,6 +21,7 @@ import com.highlight.highlight_backend.repository.BidRepository;
 import com.highlight.highlight_backend.repository.ProductRepository;
 import com.highlight.highlight_backend.repository.user.UserRepository;
 import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.user.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -456,7 +457,7 @@ public class AuctionService {
      * 즉시구매 입찰 생성
      */
     private Bid createBuyItNowBid(Auction auction, Long userId) {
-        com.highlight.highlight_backend.domain.User user = userRepository.findById(userId)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
             
         Bid buyItNowBid = new Bid();

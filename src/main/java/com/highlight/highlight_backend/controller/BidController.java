@@ -1,5 +1,7 @@
 package com.highlight.highlight_backend.controller;
 
+import com.highlight.highlight_backend.common.util.AuthenticationUtils;
+import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.dto.BidResponseDto;
@@ -7,8 +9,6 @@ import com.highlight.highlight_backend.dto.ResponseDto;
 import com.highlight.highlight_backend.dto.WinBidDetailResponseDto;
 import com.highlight.highlight_backend.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.service.BidService;
-import com.highlight.highlight_backend.util.AuthenticationUtils;
-import com.highlight.highlight_backend.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

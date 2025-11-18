@@ -1,11 +1,11 @@
-package com.highlight.highlight_backend.controller.user;
+package com.highlight.highlight_backend.search;
 
 import com.highlight.highlight_backend.dto.ResponseDto;
-import com.highlight.highlight_backend.dto.UserAuctionDetailResponseDto;
+import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
-import com.highlight.highlight_backend.service.UserAuctionSearchService;
 import com.highlight.highlight_backend.service.ProductService;
+import com.highlight.highlight_backend.service.UserAuctionSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,21 +22,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 /**
- * 경매 목록을 조회하고 세부사항을 확인하는 controller
- *
- * @Author 탁찬홍
- * @since 2025.08.15
+ * 메인 페이지, 상제 페이지, 카테고리 페이지의 내용을 담당하는 컨트롤러
  */
-@Slf4j
+
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/public/products")
 @Tag(name = "경매 목록 조회", description = "경매 목록 검색, 필터링, 상세조회 API")
-public class AuctionSearchController {
+public class SearchController {
 
     private final UserAuctionSearchService userAuctionSearchService;
     private final ProductService productService;
@@ -52,17 +49,17 @@ public class AuctionSearchController {
      */
     @GetMapping("/")
     @Operation(
-        summary = "경매 목록 조회 및 검색", 
-        description = "모든 경매 목록을 필터링과 정렬 조건에 따라 조회합니다. 로그인 없이 접근 가능한 공개 API입니다. 카테고리, 가격 범위, 브랜드, 경매 상태 등으로 필터링할 수 있으며, 다양한 정렬 옵션을 제공합니다."
+            summary = "경매 목록 조회 및 검색",
+            description = "모든 경매 목록을 필터링과 정렬 조건에 따라 조회합니다. 로그인 없이 접근 가능한 공개 API입니다. 카테고리, 가격 범위, 브랜드, 경매 상태 등으로 필터링할 수 있으며, 다양한 정렬 옵션을 제공합니다."
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200", 
-            description = "경매 목록 조회 성공",
-            content = @Content(schema = @Schema(implementation = ResponseDto.class))
-        ),
-        @ApiResponse(responseCode = "400", description = "잘못된 검색 파라미터"),
-        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "경매 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ResponseDto.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "잘못된 검색 파라미터"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     public ResponseEntity<ResponseDto<Page<UserAuctionResponseDto>>> home (
             @Parameter(description = "카테고리 필터 (PROPS, FURNITURE, HOME_APPLIANCES, SCULPTURE, FASHION, CERAMICS, PAINTING)", example = "FURNITURE")
@@ -100,17 +97,17 @@ public class AuctionSearchController {
      */
     @GetMapping("/{auctionId}")
     @Operation(
-        summary = "경매 상세 정보 조회", 
-        description = "특정 경매의 상세 정보를 조회합니다. 상품 정보, 현재 입찰 현황, 판매자 정보, 이미지 등 모든 상세 정보를 포함합니다. 로그인 없이 접근 가능합니다."
+            summary = "경매 상세 정보 조회",
+            description = "특정 경매의 상세 정보를 조회합니다. 상품 정보, 현재 입찰 현황, 판매자 정보, 이미지 등 모든 상세 정보를 포함합니다. 로그인 없이 접근 가능합니다."
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200", 
-            description = "경매 상세 정보 조회 성공",
-            content = @Content(schema = @Schema(implementation = ResponseDto.class))
-        ),
-        @ApiResponse(responseCode = "404", description = "경매를 찾을 수 없음"),
-        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "경매 상세 정보 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ResponseDto.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "경매를 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     public ResponseEntity<ResponseDto<UserAuctionDetailResponseDto>> getAuctionDetail(
             @Parameter(description = "조회할 경매의 고유 ID", required = true, example = "1")
@@ -121,7 +118,7 @@ public class AuctionSearchController {
 
         // 1. 경매 상세 정보 조회
         UserAuctionDetailResponseDto response = userAuctionSearchService.getProductsDetail(auctionId);
-        
+
         // 2. 상품 조회 이력 저장 (비동기로 처리하여 응답 속도에 영향 주지 않음)
         try {
             // UserAuctionDetailResponseDto에 productId 필드가 없으므로 일단 주석 처리
@@ -132,7 +129,7 @@ public class AuctionSearchController {
                 String sessionId = session.getId();
                 String ipAddress = getClientIpAddress(request);
                 String userAgent = request.getHeader("User-Agent");
-                
+
                 // 현재는 비회원 사용자만 고려 (userId = null)
                 productService.recordProductView(productId, null, sessionId, ipAddress, userAgent);
             }
@@ -140,44 +137,44 @@ public class AuctionSearchController {
             // 조회 이력 저장 실패가 상세 조회에 영향주지 않도록 로그만 남김
             log.warn("상품 조회 이력 저장 실패: auctionId={}, error={}", auctionId, e.getMessage());
         }
-        
+
         return ResponseEntity.ok(ResponseDto.success(response, "경매 상세 목록을 성공적으로 불러왔습니다"));
     }
 
     /**
      * 함께 본 상품 추천 조회
-     * 
+     *
      * @param productId 기준 상품 ID
      * @param size 추천 상품 개수 (기본값: 4)
      * @return 함께 본 상품 목록
      */
     @GetMapping("/{productId}/viewed-together")
     @Operation(
-        summary = "함께 본 상품 추천 조회", 
-        description = "특정 상품과 함께 조회된 다른 상품들을 사용자 행동 패턴 분석을 기반으로 추천합니다. " +
-                     "연관도 점수가 높은 순으로 정렬되며, 로그인 없이 접근 가능한 공개 API입니다. " +
-                     "추천 알고리즘은 동일 세션/사용자의 조회 패턴, 시간적 근접성, 카테고리 유사성을 종합적으로 고려합니다."
+            summary = "함께 본 상품 추천 조회",
+            description = "특정 상품과 함께 조회된 다른 상품들을 사용자 행동 패턴 분석을 기반으로 추천합니다. " +
+                    "연관도 점수가 높은 순으로 정렬되며, 로그인 없이 접근 가능한 공개 API입니다. " +
+                    "추천 알고리즘은 동일 세션/사용자의 조회 패턴, 시간적 근접성, 카테고리 유사성을 종합적으로 고려합니다."
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200", 
-            description = "함께 본 상품 추천 조회 성공",
-            content = @Content(schema = @Schema(implementation = ResponseDto.class))
-        ),
-        @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음"),
-        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "함께 본 상품 추천 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ResponseDto.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     public ResponseEntity<ResponseDto<Page<ViewTogetherProductResponseDto>>> getViewedTogetherProducts(
             @Parameter(description = "기준 상품의 고유 ID", required = true, example = "1")
             @PathVariable("productId") Long productId,
             @Parameter(description = "추천 상품 개수", example = "4")
             @RequestParam(defaultValue = "4") int size) {
-        
-        log.info("GET /api/public/products/{}/viewed-together - 함께 본 상품 추천 조회 요청 (size: {})", 
+
+        log.info("GET /api/public/products/{}/viewed-together - 함께 본 상품 추천 조회 요청 (size: {})",
                 productId, size);
 
         Page<ViewTogetherProductResponseDto> response = productService.getViewedTogetherProducts(productId, size);
-        
+
         return ResponseEntity.ok(
                 ResponseDto.success(response, "함께 본 상품 추천을 성공적으로 조회했습니다."));
     }
@@ -187,18 +184,18 @@ public class AuctionSearchController {
      */
     private String getClientIpAddress(HttpServletRequest request) {
         String[] headerNames = {
-            "X-Forwarded-For",
-            "X-Real-IP", 
-            "Proxy-Client-IP",
-            "WL-Proxy-Client-IP",
-            "HTTP_X_FORWARDED_FOR",
-            "HTTP_X_FORWARDED",
-            "HTTP_X_CLUSTER_CLIENT_IP",
-            "HTTP_CLIENT_IP",
-            "HTTP_FORWARDED_FOR",
-            "HTTP_FORWARDED"
+                "X-Forwarded-For",
+                "X-Real-IP",
+                "Proxy-Client-IP",
+                "WL-Proxy-Client-IP",
+                "HTTP_X_FORWARDED_FOR",
+                "HTTP_X_FORWARDED",
+                "HTTP_X_CLUSTER_CLIENT_IP",
+                "HTTP_CLIENT_IP",
+                "HTTP_FORWARDED_FOR",
+                "HTTP_FORWARDED"
         };
-        
+
         for (String headerName : headerNames) {
             String ip = request.getHeader(headerName);
             if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
@@ -206,7 +203,7 @@ public class AuctionSearchController {
                 return ip.split(",")[0].trim();
             }
         }
-        
+
         return request.getRemoteAddr();
     }
 }

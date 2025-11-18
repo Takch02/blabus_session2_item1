@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.dto;
 
-import com.highlight.highlight_backend.validation.ValidPassword;
+import com.highlight.highlight_backend.common.password.ValidPassword;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

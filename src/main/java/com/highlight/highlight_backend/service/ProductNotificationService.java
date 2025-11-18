@@ -1,8 +1,6 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.domain.Product;
 import com.highlight.highlight_backend.domain.ProductNotification;
-import com.highlight.highlight_backend.domain.User;
 import com.highlight.highlight_backend.dto.ProductNotificationRequestDto;
 import com.highlight.highlight_backend.dto.ProductNotificationResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;

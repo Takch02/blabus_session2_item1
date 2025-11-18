@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.domain.Auction;
 import com.highlight.highlight_backend.domain.Bid;
-import com.highlight.highlight_backend.domain.User;
+import com.highlight.highlight_backend.user.User;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.dto.BidResponseDto;

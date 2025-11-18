@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.validation;
+package com.highlight.highlight_backend.common.password;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
