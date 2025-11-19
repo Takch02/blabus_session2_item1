@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

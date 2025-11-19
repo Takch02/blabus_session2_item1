@@ -16,15 +16,7 @@ import java.util.Optional;
  */
 @Repository
 public interface AdminRepository extends JpaRepository<Admin, Long> {
-    
-    /**
-     * 관리자 ID로 관리자 조회
-     * 
-     * @param adminId 관리자 ID
-     * @return 관리자 정보 (Optional)
-     */
-    Optional<Admin> findByAdminId(String adminId);
-    
+
     /**
      * 활성화된 관리자 ID로 조회
      * 
@@ -32,14 +24,7 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
      * @return 활성화된 관리자 정보 (Optional)
      */
     Optional<Admin> findByAdminIdAndIsActiveTrue(String adminId);
-    
-    /**
-     * 이메일로 관리자 조회
-     * 
-     * @param email 이메일
-     * @return 관리자 정보 (Optional)
-     */
-    Optional<Admin> findByEmail(String email);
+
     
     /**
      * 관리자 ID 중복 체크
@@ -48,12 +33,5 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
      * @return 존재 여부
      */
     boolean existsByAdminId(String adminId);
-    
-    /**
-     * 이메일 중복 체크
-     * 
-     * @param email 이메일
-     * @return 존재 여부
-     */
-    boolean existsByEmail(String email);
+
 }

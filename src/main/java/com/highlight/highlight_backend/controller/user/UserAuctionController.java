@@ -3,7 +3,7 @@ package com.highlight.highlight_backend.controller.user;
 import com.highlight.highlight_backend.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.admin.auction.service.AuctionService;
+import com.highlight.highlight_backend.admin.auction.service.AdminAuctionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "즉시구매", description = "경매 상품 즉시구매 API")
 public class UserAuctionController {
     
-    private final AuctionService auctionService;
+    private final AdminAuctionService adminAuctionService;
     
     /**
      * 즉시구매
@@ -54,17 +54,15 @@ public class UserAuctionController {
         @ApiResponse(responseCode = "409", description = "이미 종료된 경매")
     })
     public ResponseEntity<ResponseDto<BuyItNowResponseDto>> buyItNow(
-            @Parameter(description = "즉시구매할 경매의 고유 ID", required = true, example = "1")
-            @PathVariable Long auctionId,
             @Parameter(description = "즉시구매 요청 데이터 (결제 정보 포함)", required = true)
             @Valid @RequestBody BuyItNowRequestDto request,
             @Parameter(hidden = true) Authentication authentication) {
         
         Long userId = (Long) authentication.getPrincipal();
-        log.info("POST /api/user/auctions/{}/buy-it-now - 즉시구매 요청 (사용자: {})", 
-                auctionId, userId);
+        log.info("POST /api/user/auctions/buy-it-now - 즉시구매 요청 (사용자: {})",
+                 userId);
         
-        BuyItNowResponseDto response = auctionService.buyItNow(auctionId, request, userId);
+        BuyItNowResponseDto response = adminAuctionService.buyItNow(request, userId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "즉시구매가 완료되었습니다.")

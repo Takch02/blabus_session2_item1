@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.admin.user.domain.Admin;
-import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.admin.product.domian.ProductImage;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardItemResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardStatsResponseDto;

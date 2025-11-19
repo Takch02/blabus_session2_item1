@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.*;
 public class SearchController {
 
     private final SearchService searchService;
-    private final ProductService productService;
 
     /**
      * 메인 화면 및 카테고리 화면
@@ -165,10 +164,7 @@ public class SearchController {
     /**
      * 관련 상품 추천 조회 (공개 API)
      *
-     * @param productId 기준 상품 ID
-     * @param size 추천 상품 개수 (기본 4개)
-     * @return 추천 상품 목록
-     */
+    **/
     @GetMapping("/{productId}/recommendations")
     @Operation(
             summary = "관련 상품 추천",

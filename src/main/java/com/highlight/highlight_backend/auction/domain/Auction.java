@@ -1,5 +1,7 @@
-package com.highlight.highlight_backend.admin.auction.domain;
+package com.highlight.highlight_backend.auction.domain;
 
+import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestDto;
+import com.highlight.highlight_backend.admin.auction.dto.AuctionUpdateRequestDto;
 import com.highlight.highlight_backend.admin.product.domian.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -164,11 +166,74 @@ public class Auction {
     private LocalDateTime createdAt;
     
     /**
-     * 수정 시간
+     * Auction 수정 시 사용
      */
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    
+
+    public void updateDetail(AuctionUpdateRequestDto request, LocalDateTime kstStartTime, LocalDateTime kstEndTime) {
+        // 가격 정보 수정
+        if (request.getStartPrice() != null) {
+            this.setStartPrice(request.getStartPrice());
+        }
+
+        if (request.getBidUnit() != null) {
+            this.setBidUnit(request.getBidUnit());
+        }
+
+        if (request.getMaxBid() != null) {
+            this.setMaxBid(request.getMaxBid());
+        }
+
+        if (request.getMinimumBid() != null) {
+            this.setMinimumBid(request.getMinimumBid());
+        }
+
+        if (request.getShippingFee() != null) {
+            this.setShippingFee(request.getShippingFee());
+        }
+
+        if (request.getIsPickupAvailable() != null) {
+            this.setIsPickupAvailable(request.getIsPickupAvailable());
+        }
+
+        // 설명 수정
+        if (request.getDescription() != null) {
+            this.setDescription(request.getDescription());
+        }
+
+        //  시간 정보 수정
+        if (kstStartTime != null) {
+            this.setScheduledStartTime(kstStartTime);
+        }
+
+        if (kstEndTime != null) {
+            this.setScheduledEndTime(kstEndTime);
+        }
+    }
+
+    /**
+     * Auction 에 처음 추가시 사용
+     */
+    public void addDetail(Product product, Long adminId, LocalDateTime kstStartTime,
+                          LocalDateTime kstEndTime, AuctionScheduleRequestDto request) {
+
+        this.setProduct(product);
+        this.setStatus(Auction.AuctionStatus.SCHEDULED); // 초기 상태는 '예약됨'
+        this.setScheduledStartTime(kstStartTime);
+        this.setScheduledEndTime(kstEndTime);
+        this.setDescription(request.getDescription());
+        this.setBuyItNowPrice(request.getBuyItNowPrice());
+        this.setCreatedBy(adminId);
+        this.setBidUnit(request.getBidUnit());
+        this.setStartPrice(request.getStartPrice());         // 경매 시작가 설정
+        this.setCurrentHighestBid(request.getStartPrice());
+        this.setMinimumBid(request.getMinimumBid());       // 최소 인상폭 설정
+        this.setMaxBid(request.getMaxBid());               // 최대 인상폭 설정
+        this.setShippingFee(request.getShippingFee());       // 배송비 설정
+        this.setIsPickupAvailable(request.getIsPickupAvailable()); // 직접 픽업 가능 여부
+    }
+
     /**
      * 경매 상태 열거형
      */
