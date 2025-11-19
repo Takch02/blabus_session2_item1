@@ -5,7 +5,7 @@ import com.highlight.highlight_backend.admin.product.repository.ProductRepositor
 import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.admin.vaildator.AdminValidator;
+import com.highlight.highlight_backend.admin.vaildator.AuctionValidator;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import org.springframework.util.StringUtils;
 public class ProductService {
     
     private final ProductRepository productRepository;
-    private final AdminValidator adminValidator;
+    private final AuctionValidator auctionValidator;
 
     private final ProductImageService productImageService;
 
@@ -47,7 +47,7 @@ public class ProductService {
         log.info("상품 등록 요청: {} (관리자: {})", request.getProductName(), adminId);
         
         // 1. 관리자 권한 확인
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         // 2. 상품 소개 글자 수 검증
         if (StringUtils.hasText(request.getShortDescription()) && 
@@ -106,7 +106,7 @@ public class ProductService {
         log.info("상품 수정 요청: {} (관리자: {})", productId, adminId);
         
         // 1. 관리자 권한 확인
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         // 2. 상품 조회
         Product product = productRepository.findByIdWithImages(productId)
@@ -190,7 +190,7 @@ public class ProductService {
     public Page<ProductResponseDto> getProductList(Pageable pageable, Long adminId) {
         log.info("상품 목록 조회 요청 (관리자: {})", adminId);
         
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         return productRepository.findByRegisteredByOrderByCreatedAtDesc(adminId, pageable)
             .map(ProductResponseDto::from);
@@ -206,7 +206,7 @@ public class ProductService {
     public ProductResponseDto getProduct(Long productId, Long adminId) {
         log.info("상품 상세 조회 요청: {} (관리자: {})", productId, adminId);
         
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         Product product = productRepository.findByIdWithImages(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
@@ -224,7 +224,7 @@ public class ProductService {
     public void deleteProduct(Long productId, Long adminId) {
         log.info("상품 삭제 요청: {} (관리자: {})", productId, adminId);
         
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
@@ -253,7 +253,7 @@ public class ProductService {
         log.info("상품 프리미엄 설정 변경: 상품={}, 프리미엄={}, 관리자={}", productId, isPremium, adminId);
         
         // 관리자 권한 검증
-        adminValidator.validateProductManagePermission(adminId);
+        auctionValidator.validateProductManagePermission(adminId);
         
         // 상품 조회
         Product product = productRepository.findById(productId)

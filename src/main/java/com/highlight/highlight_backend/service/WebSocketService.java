@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.domain.Bid;
 import com.highlight.highlight_backend.dto.websocket.AuctionStatusWebSocketDto;
 import com.highlight.highlight_backend.dto.websocket.BidOutbidNotificationDto;

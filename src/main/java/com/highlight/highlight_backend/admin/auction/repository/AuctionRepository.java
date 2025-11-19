@@ -1,6 +1,8 @@
 package com.highlight.highlight_backend.admin.auction.repository;
 
-import com.highlight.highlight_backend.admin.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.exception.AuctionErrorCode;
+import com.highlight.highlight_backend.exception.BusinessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,6 +28,13 @@ import java.util.Optional;
  */
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpecificationExecutor<Auction> {
+
+
+    default Auction getOrThrow(Long id) {
+        return findById(id)
+                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+    }
+
 
     List<Auction> findByStatusAndScheduledStartTimeBefore(Auction.AuctionStatus status, LocalDateTime time);
 

@@ -1,6 +1,8 @@
 package com.highlight.highlight_backend.admin.product.repository;
 
 import com.highlight.highlight_backend.admin.product.domian.Product;
+import com.highlight.highlight_backend.exception.BusinessException;
+import com.highlight.highlight_backend.exception.ProductErrorCode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,16 +23,11 @@ import java.util.Optional;
  */
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    
-    /**
-     * 상품명으로 검색
-     * 
-     * @param productName 상품명 (부분 일치)
-     * @param pageable 페이징 정보
-     * @return 검색된 상품 목록
-     */
-    Page<Product> findByProductNameContainingIgnoreCase(String productName, Pageable pageable);
-    
+
+    default Product getOrThrow(Long id) {
+        return findById(id)
+                .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
+    }
     /**
      * 상품 상태로 조회
      * 
