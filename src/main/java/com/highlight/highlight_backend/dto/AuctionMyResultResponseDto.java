@@ -55,6 +55,7 @@ public class AuctionMyResultResponseDto {
     /**
      * 경매 결과 타입
      */
+    @Getter
     public enum AuctionResultType {
         WON("낙찰"),
         LOST("유찰"), 
@@ -66,10 +67,7 @@ public class AuctionMyResultResponseDto {
         AuctionResultType(String description) {
             this.description = description;
         }
-        
-        public String getDescription() {
-            return description;
-        }
+
     }
     
     /**

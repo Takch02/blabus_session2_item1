@@ -6,7 +6,7 @@ import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto
 import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
 import com.highlight.highlight_backend.admin.product.repository.ProductImageRepository;
 import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
-import com.highlight.highlight_backend.admin.vaildator.AuctionValidator;
+import com.highlight.highlight_backend.admin.validator.CommonValidator;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class ProductImageService {
 
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
-    private final AuctionValidator auctionValidator;
+    private final CommonValidator commonValidator;
 
     private final S3Service s3Service;
 
@@ -127,7 +127,7 @@ public class ProductImageService {
         log.info("상품 이미지 업로드: 상품={}, 파일개수={}, 관리자={}", productId, files.length, adminId);
 
         // 관리자 권한 검증
-        auctionValidator.validateProductManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
 
         // 상품 존재 확인
         Product product = productRepository.findById(productId)
@@ -184,7 +184,7 @@ public class ProductImageService {
         log.info("상품 이미지 삭제: 상품={}, 이미지={}, 관리자={}", productId, imageId, adminId);
 
         // 관리자 권한 검증
-        auctionValidator.validateProductManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
 
         // 상품 존재 확인
         Product product = productRepository.findById(productId)

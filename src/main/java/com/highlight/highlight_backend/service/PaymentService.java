@@ -13,6 +13,7 @@ import com.highlight.highlight_backend.exception.PaymentErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
+import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,6 @@ import java.time.LocalDateTime;
  * 경매 낙찰 후 결제 처리를 담당합니다.
  * 포인트를 최대한 활용하여 결제 금액을 최소화합니다.
  *
- * @author 탁찬홍
- * @since 2025.08.21
  */
 @Slf4j
 @Service

@@ -16,6 +16,7 @@ import com.highlight.highlight_backend.exception.AuthErrorCode;
 import com.highlight.highlight_backend.exception.CommonErrorCode;
 import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.repository.BidRepository;
+import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,9 +29,7 @@ import java.util.Optional;
 
 /**
  * 입찰 관련 비즈니스 로직 서비스
- * 
- * @author 전우선
- * @since 2025.08.15
+ *
  */
 @Slf4j
 @Service
