@@ -6,7 +6,6 @@ import com.highlight.highlight_backend.search.service.SearchService;
 import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
 import com.highlight.highlight_backend.search.dto.UserAuctionResponseDto;
 import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
-import com.highlight.highlight_backend.admin.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

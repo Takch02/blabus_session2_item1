@@ -2,20 +2,18 @@ package com.highlight.highlight_backend.admin.product.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 import com.highlight.highlight_backend.admin.product.domian.Product;
 
 /**
  * 상품 등록 요청 DTO
- * 
- * @author 전우선
- * @since 2025.08.13
+ *
  */
+@AllArgsConstructor
+@Builder
 @Getter
-@NoArgsConstructor
 public class ProductCreateRequestDto {
     
     /**
@@ -26,7 +24,7 @@ public class ProductCreateRequestDto {
     private String productName;
     
     /**
-     * 상품 소개 (50자 제한)
+     * 상품 소개 (100자 제한)
      */
     @NotBlank(message = "상품 소개는 필수입니다")
     @Size(max = 100, message = "상품 소개는 100자를 초과할 수 없습니다")
@@ -122,12 +120,14 @@ public class ProductCreateRequestDto {
      * 임시저장 여부 (true: 임시저장, false: 활성 상태로 등록)
      */
     private boolean isDraft = false;
-    
+
+
     /**
      * 상품 이미지 DTO
      */
     @Getter
-    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class ProductImageDto {
         /**
          * 이미지 URL

@@ -1,5 +1,7 @@
 package com.highlight.highlight_backend.admin.product.domian;
 
+import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
+import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
 import com.highlight.highlight_backend.domain.Seller;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,6 +10,7 @@ import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -255,5 +258,81 @@ public class Product {
     public String getMainImageUrl() {
         ProductImage primaryImage = getPrimaryImage();
         return primaryImage != null ? primaryImage.getImageUrl() : null;
+    }
+
+    /**
+     * product 객체 첫 생성 후 반환
+     */
+    public Product setFirstProductDetail(ProductCreateRequestDto request, Long adminId) {
+        Product product = new Product();
+        product.setProductName(request.getProductName());
+        product.setShortDescription(request.getShortDescription());
+        product.setHistory(request.getHistory());
+        product.setExpectedEffects(request.getExpectedEffects());
+        product.setDetailedInfo(request.getDetailedInfo());
+        product.setCategory(request.getCategory());
+        product.setProductCount(request.getProductCount());
+        product.setMaterial(request.getMaterial());
+        product.setSize(request.getSize());
+        product.setBrand(request.getBrand());
+        product.setManufactureYear(request.getManufactureYear());
+        product.setCondition(request.getCondition());
+        product.setRank(request.getRank());
+        product.setRegisteredBy(adminId);
+        product.setSellerId(1L); // 고정 판매자 NAFAL (ID=1)
+        product.setIsPremium(request.getIsPremium());
+
+        // 상태 설정 (임시저장 또는 활성)
+        product.setStatus(request.isDraft() ? Product.ProductStatus.DRAFT : Product.ProductStatus.ACTIVE);
+        return product;
+    }
+
+    public void updateProductDetail(ProductUpdateRequestDto request, Product product) {
+        // 4. 상품 정보 업데이트
+        if (StringUtils.hasText(request.getProductName())) {
+            product.setProductName(request.getProductName());
+        }
+        if (StringUtils.hasText(request.getShortDescription())) {
+            product.setShortDescription(request.getShortDescription());
+        }
+        if (request.getHistory() != null) {
+            product.setHistory(request.getHistory());
+        }
+        if (request.getExpectedEffects() != null) {
+            product.setExpectedEffects(request.getExpectedEffects());
+        }
+        if (request.getDetailedInfo() != null) {
+            product.setDetailedInfo(request.getDetailedInfo());
+        }
+        if (request.getCategory() != null) {
+            product.setCategory(request.getCategory());
+        }
+        if (request.getProductCount() != null) {
+            product.setProductCount(request.getProductCount());
+        }
+        if (request.getMaterial() != null) {
+            product.setMaterial(request.getMaterial());
+        }
+        if (request.getSize() != null) {
+            product.setSize(request.getSize());
+        }
+        if (request.getBrand() != null) {
+            product.setBrand(request.getBrand());
+        }
+        if (request.getManufactureYear() != null) {
+            product.setManufactureYear(request.getManufactureYear());
+        }
+        if (request.getCondition() != null) {
+            product.setCondition(request.getCondition());
+        }
+        if (request.getRank() != null) {
+            product.setRank(request.getRank());
+        }
+        if (request.getStatus() != null) {
+            product.setStatus(request.getStatus());
+        }
+        if (request.getIsPremium() != null) {
+            product.setIsPremium(request.getIsPremium());
+        }
     }
 }

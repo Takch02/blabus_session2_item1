@@ -127,9 +127,6 @@ public class SearchService {
     }
 
 
-
-
-
     /**
      * 관련 상품 추천 조회
      *

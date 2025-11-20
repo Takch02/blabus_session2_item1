@@ -82,10 +82,9 @@ public class ProductController {
     
     /**
      * 상품 목록 조회
-     * 
-     * @param pageable 페이징 정보
-     * @param authentication 현재 로그인한 관리자 정보
-     * @return 상품 목록
+     *
+     * 리펙토링 전 문제점 : SQL N + 1 문제가 발생함. -> product N개 가져오는 쿼리 1개 + 각 product 마다 image 쿼리 N 개
+     * 해결 :
      */
     @GetMapping
     @Operation(summary = "상품 목록 조회", description = "등록된 상품 목록을 페이징하여 조회합니다.")

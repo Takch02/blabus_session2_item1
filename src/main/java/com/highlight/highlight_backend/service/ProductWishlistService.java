@@ -8,6 +8,7 @@ import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
 import com.highlight.highlight_backend.repository.ProductWishlistRepository;
+import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,9 +23,7 @@ import java.util.Optional;
  * 상품 찜하기 서비스
  * 
  * 상품 찜하기, 취소, 조회 기능을 제공합니다.
- * 
- * @author 전우선
- * @since 2025.08.16
+ *
  */
 @Slf4j
 @Service

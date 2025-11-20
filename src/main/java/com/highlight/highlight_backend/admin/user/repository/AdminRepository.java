@@ -8,7 +8,6 @@ import java.util.Optional;
 
 /**
  * 관리자 Repository
- * 
  * 관리자 데이터 액세스를 위한 JPA Repository입니다.
  * 
  * @author 전우선

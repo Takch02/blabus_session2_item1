@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.admin.vaildator;
+package com.highlight.highlight_backend.admin.validator;
 
 import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.admin.user.domain.Admin;
@@ -17,15 +17,19 @@ import java.time.temporal.ChronoUnit;
 /**
  * refactoring 하며 새로 만든 validator
  *
- * 관리자임을 체크합니다.
+ * 관리자 체크, 시간 검증, 사용자 검증, 경매 시간 검증 등
  */
 @Component
 @RequiredArgsConstructor
-public class AuctionValidator {
+public class CommonValidator {
     private final AdminRepository adminRepository;
     private final UserRepository userRepository;
 
-    public void validateProductManagePermission(Long adminId) {
+
+    /**
+     * 관리자 검증 메소드
+     */
+    public void validateManagePermission(Long adminId) {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
 
@@ -36,21 +40,6 @@ public class AuctionValidator {
 
     }
 
-    /**
-     * 경매 관리 권한 검증
-     *
-     * @param adminId 검증할 관리자 ID
-     * @return 검증된 관리자 정보
-     */
-    public void validateAuctionManagePermission(Long adminId) {
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
-
-        // 기획 변경: 모든 관리자가 경매 관리 가능, SUPER_ADMIN 체크만 유지
-        if (admin.getRole() != Admin.AdminRole.SUPER_ADMIN && admin.getRole() != Admin.AdminRole.ADMIN) {
-            throw new BusinessException(AdminErrorCode.INSUFFICIENT_PERMISSION);
-        }
-    }
 
     /**
      * UTC 시간을 한국 시간(KST)으로 변환

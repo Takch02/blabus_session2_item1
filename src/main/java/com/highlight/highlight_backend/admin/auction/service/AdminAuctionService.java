@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.admin.auction.service;
 
 import com.highlight.highlight_backend.admin.user.domain.Admin;
-import com.highlight.highlight_backend.admin.vaildator.AuctionValidator;
+import com.highlight.highlight_backend.admin.validator.CommonValidator;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
@@ -44,13 +44,13 @@ public class AdminAuctionService {
     private final AuctionRepository auctionRepository;
     private final ProductRepository productRepository;
     private final AdminRepository adminRepository;
-
-    private final WebSocketService webSocketService;
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
+
+    private final WebSocketService webSocketService;
     private final AuctionSchedulerService auctionSchedulerService;
 
-    private final AuctionValidator auctionValidator;
+    private final CommonValidator commonValidator;
     
     /**
      * 경매 예약
@@ -64,7 +64,7 @@ public class AdminAuctionService {
         log.info("경매 예약 요청: 상품 {} (관리자: {})", request.getProductId(), adminId);
         
         // 1. 관리자 권한 확인
-        auctionValidator.validateAuctionManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
         
         // 2. 상품 조회 및 검증
         Product product = productRepository.getOrThrow(request.getProductId());
@@ -80,14 +80,14 @@ public class AdminAuctionService {
         }
         
         // 5. UTC 시간을 한국 시간으로 변환
-        LocalDateTime kstStartTime = auctionValidator.convertUTCToKST(request.getScheduledStartTime());
-        LocalDateTime kstEndTime = auctionValidator.convertUTCToKST(request.getScheduledEndTime());
+        LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
+        LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
         
         // 6. 경매 시간 검증
-        auctionValidator.validateAuctionTime(kstStartTime, kstEndTime);
+        commonValidator.validateAuctionTime(kstStartTime, kstEndTime);
         
         // 7. 즉시구매가 설정 시 재고 1개 검증
-        auctionValidator.validateBuyItNowProductCount(product, request.getBuyItNowPrice());
+        commonValidator.validateBuyItNowProductCount(product, request.getBuyItNowPrice());
         
         // 8. 경매 엔티티 생성
         Auction auction = new Auction();
@@ -124,7 +124,7 @@ public class AdminAuctionService {
                 auctionId, adminId, request.isImmediateStart());
         
         // 1. 관리자 권한 확인
-        auctionValidator.validateAuctionManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
         
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
@@ -146,9 +146,9 @@ public class AdminAuctionService {
             }
         } else {
             // 시간 입력: UTC 시간을 한국 시간으로 변환하여 설정
-            LocalDateTime kstStartTime = auctionValidator.convertUTCToKST(request.getScheduledStartTime());
-            LocalDateTime kstEndTime = auctionValidator.convertUTCToKST(request.getScheduledEndTime());
-            auctionValidator.validateAuctionTime(kstStartTime, kstEndTime);
+            LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
+            LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
+            commonValidator.validateAuctionTime(kstStartTime, kstEndTime);
             auction.setScheduledStartTime(kstStartTime);
             auction.setScheduledEndTime(kstEndTime);
             auction.startAuction(adminId);
@@ -178,7 +178,7 @@ public class AdminAuctionService {
     @Transactional
     public AuctionResponseDto cancelAuction(Long auctionId, Long adminId) {
         // 1. 검증
-        auctionValidator.validateAuctionManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
         if (!auction.canEnd()) { // 혹은 canCancel() 별도 구현 추천
@@ -210,7 +210,7 @@ public class AdminAuctionService {
                 auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        auctionValidator.validateAuctionManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
 
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
@@ -307,7 +307,7 @@ public class AdminAuctionService {
         log.info("경매 수정 요청: 경매 {} (관리자: {})", auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        auctionValidator.validateAuctionManagePermission(adminId);
+        commonValidator.validateManagePermission(adminId);
 
         // 2. 경매 조회 및 검증
         Auction auction = auctionRepository.getOrThrow(auctionId);
@@ -326,7 +326,7 @@ public class AdminAuctionService {
 
         // 6. 시작/종료 시간이 모두 설정된 경우 시간 검증
         if (auction.getScheduledStartTime() != null && auction.getScheduledEndTime() != null) {
-            auctionValidator.validateAuctionTime(auction.getScheduledStartTime(), auction.getScheduledEndTime());
+            commonValidator.validateAuctionTime(auction.getScheduledStartTime(), auction.getScheduledEndTime());
         }
 
         // 7. 상품 변경
@@ -347,12 +347,12 @@ public class AdminAuctionService {
             auction.setProduct(newProduct);
         }
 
-        LocalDateTime kstEndTime = auctionValidator.convertUTCToKST(request.getScheduledEndTime());
-        LocalDateTime kstStartTime = auctionValidator.convertUTCToKST(request.getScheduledStartTime());
+        LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
+        LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
 
         if (request.getBuyItNowPrice() != null) {
             // 즉시구매가 설정 시 재고 1개 검증
-            auctionValidator.validateBuyItNowProductCount(auction.getProduct(), request.getBuyItNowPrice());
+            commonValidator.validateBuyItNowProductCount(auction.getProduct(), request.getBuyItNowPrice());
             auction.setBuyItNowPrice(request.getBuyItNowPrice());
         }
         // updateDetail 을 통해 한번에 update
@@ -383,7 +383,7 @@ public class AdminAuctionService {
         }
 
         // 사용자 존재 여부 확인
-        auctionValidator.validateUserExists(userId);
+        commonValidator.validateUserExists(userId);
     }
 
     /**
