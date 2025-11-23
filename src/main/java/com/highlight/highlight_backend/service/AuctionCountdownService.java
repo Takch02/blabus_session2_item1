@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuctionCountdownService {
     
-    private final AuctionRepository auctionRepository;
+    private final AuctionQueryRepository auctionQueryRepository;
     private final WebSocketService webSocketService;
     
     /**
@@ -35,7 +35,7 @@ public class AuctionCountdownService {
     public void sendCountdownUpdates() {
         try {
             // 진행 중인 경매만 조회
-            List<Auction> inProgressAuctions = auctionRepository.findByStatus(Auction.AuctionStatus.IN_PROGRESS);
+            List<Auction> inProgressAuctions = auctionQueryRepository.findByStatus(Auction.AuctionStatus.IN_PROGRESS);
             
             for (Auction auction : inProgressAuctions) {
                 // 종료 시간이 지났는지 확인 (한국 시간 기준)
@@ -67,7 +67,7 @@ public class AuctionCountdownService {
             LocalDateTime oneMinuteLater = now.plusMinutes(1);
             
             // 1분 내로 종료 예정인 경매 조회
-            List<Auction> endingSoonAuctions = auctionRepository.findByStatusAndScheduledEndTimeBetween(
+            List<Auction> endingSoonAuctions = auctionQueryRepository.findByStatusAndScheduledEndTimeBetween(
                 Auction.AuctionStatus.IN_PROGRESS, now, oneMinuteLater);
             
             for (Auction auction : endingSoonAuctions) {

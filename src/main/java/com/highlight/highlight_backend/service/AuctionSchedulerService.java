@@ -2,10 +2,10 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.admin.product.domian.Product;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
+import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
+import com.highlight.highlight_backend.bid.repository.BidRepository;
+import com.highlight.highlight_backend.product.repository.AdminProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
@@ -26,9 +26,9 @@ import java.util.concurrent.ScheduledFuture;
 public class AuctionSchedulerService {
 
     private final TaskScheduler taskScheduler;
-    private final AuctionRepository auctionRepository;
+    private final AuctionQueryRepository auctionQueryRepository;
     private final BidRepository bidRepository;
-    private final ProductRepository productRepository;
+    private final AdminProductRepository adminProductRepository;
     private final WebSocketService webSocketService;
 
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -58,18 +58,18 @@ public class AuctionSchedulerService {
 
     @Transactional
     public void startAuction(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId).orElse(null);
+        Auction auction = auctionQueryRepository.findById(auctionId).orElse(null);
         if (auction != null && auction.getStatus() == Auction.AuctionStatus.SCHEDULED) {
             // 경매 상태를 IN_PROGRESS로 변경
             auction.setStatus(Auction.AuctionStatus.IN_PROGRESS);
-            auctionRepository.save(auction);
+            auctionQueryRepository.save(auction);
             
             // 상품 상태를 IN_AUCTION으로 변경 (Product를 별도로 조회)
             if (auction.getProduct() != null) {
-                Product product = productRepository.findById(auction.getProduct().getId()).orElse(null);
+                Product product = adminProductRepository.findById(auction.getProduct().getId()).orElse(null);
                 if (product != null) {
                     product.setStatus(Product.ProductStatus.IN_AUCTION);
-                    productRepository.save(product);
+                    adminProductRepository.save(product);
                     log.info("상품 상태가 IN_AUCTION으로 변경되었습니다. 상품 ID: {}", product.getId());
                 }
             }
@@ -84,7 +84,7 @@ public class AuctionSchedulerService {
     @Transactional
     public void checkMissedScheduledAuctions() {
         log.debug("놓친 경매가 있는지 확인합니다...");
-        List<Auction> missedAuctions = auctionRepository.findByStatusAndScheduledStartTimeBefore(Auction.AuctionStatus.SCHEDULED, LocalDateTime.now());
+        List<Auction> missedAuctions = auctionQueryRepository.findByStatusAndScheduledStartTimeBefore(Auction.AuctionStatus.SCHEDULED, LocalDateTime.now());
         
         if (!missedAuctions.isEmpty()) {
             log.info("{}개의 놓친 경매를 발견했습니다. 지금 시작합니다.", missedAuctions.size());
@@ -98,7 +98,7 @@ public class AuctionSchedulerService {
     @Transactional
     public void checkExpiredAuctions() {
         log.debug("종료된 경매가 있는지 확인합니다...");
-        List<Auction> expiredAuctions = auctionRepository.findInProgressAuctionsReadyToEnd(LocalDateTime.now());
+        List<Auction> expiredAuctions = auctionQueryRepository.findInProgressAuctionsReadyToEnd(LocalDateTime.now());
         
         if (!expiredAuctions.isEmpty()) {
             log.info("{}개의 종료된 경매를 발견했습니다. 지금 종료합니다.", expiredAuctions.size());
@@ -109,7 +109,7 @@ public class AuctionSchedulerService {
                     auction.setActualEndTime(LocalDateTime.now());
                     auction.setEndReason("경매 시간 만료로 인한 자동 종료");
                     auction.setEndedBy(1L); // 시스템 자동 종료
-                    auctionRepository.save(auction);
+                    auctionQueryRepository.save(auction);
                     
                     // 낙찰자 찾기
                     var winnerBid = bidRepository.findCurrentHighestBidByAuction(auction).orElse(null);
@@ -133,16 +133,16 @@ public class AuctionSchedulerService {
     @Transactional
     public void updateProductStatusForCompletedAuctions() {
         log.debug("완료된 경매의 상품 상태를 업데이트합니다...");
-        List<Auction> completedAuctions = auctionRepository.findByStatus(Auction.AuctionStatus.COMPLETED);
+        List<Auction> completedAuctions = auctionQueryRepository.findByStatus(Auction.AuctionStatus.COMPLETED);
         
         for (Auction auction : completedAuctions) {
             try {
                 // 상품 상태를 AUCTION_COMPLETED로 변경
                 if (auction.getProduct() != null) {
-                    Product product = productRepository.findById(auction.getProduct().getId()).orElse(null);
+                    Product product = adminProductRepository.findById(auction.getProduct().getId()).orElse(null);
                     if (product != null && product.getStatus() != Product.ProductStatus.AUCTION_COMPLETED) {
                         product.setStatus(Product.ProductStatus.AUCTION_COMPLETED);
-                        productRepository.save(product);
+                        adminProductRepository.save(product);
                         log.info("상품 상태가 AUCTION_COMPLETED로 변경되었습니다. 상품 ID: {}, 경매 ID: {}", product.getId(), auction.getId());
                     }
                 }

@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.admin.product.service;
+package com.highlight.highlight_backend.product.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

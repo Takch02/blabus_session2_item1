@@ -1,6 +1,6 @@
-package com.highlight.highlight_backend.repository;
+package com.highlight.highlight_backend.bid.repository;
 
-import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.user.domain.User;
 import org.springframework.data.domain.Page;

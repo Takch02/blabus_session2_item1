@@ -1,9 +1,9 @@
 package com.highlight.highlight_backend.service;
 
-import com.highlight.highlight_backend.admin.product.domian.Product;
+import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.domain.ProductAssociation;
 import com.highlight.highlight_backend.repository.ProductAssociationRepository;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
+import com.highlight.highlight_backend.product.repository.AdminProductRepository;
 import com.highlight.highlight_backend.repository.UserProductViewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class ProductAssociationBatchService {
 
     private final UserProductViewRepository userProductViewRepository;
     private final ProductAssociationRepository productAssociationRepository;
-    private final ProductRepository productRepository;
+    private final AdminProductRepository adminProductRepository;
 
     /**
      * 상품 연관도 계산 배치 작업 (매일 새벽 3시 실행)
@@ -54,7 +54,7 @@ public class ProductAssociationBatchService {
 
         try {
             // 1. 활성 상품 목록 조회
-            List<Product> activeProducts = productRepository.findByStatus(Product.ProductStatus.ACTIVE, 
+            List<Product> activeProducts = adminProductRepository.findByStatus(Product.ProductStatus.ACTIVE,
                 org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)).getContent();
             log.info("분석 대상 활성 상품 수: {}", activeProducts.size());
 
@@ -136,7 +136,7 @@ public class ProductAssociationBatchService {
 
         // 4. 연관도 엔티티 생성/업데이트
         int updatedCount = 0;
-        Product sourceProduct = productRepository.findById(sourceProductId).orElse(null);
+        Product sourceProduct = adminProductRepository.findById(sourceProductId).orElse(null);
         if (sourceProduct == null) {
             return 0;
         }
@@ -151,7 +151,7 @@ public class ProductAssociationBatchService {
             }
             
             try {
-                Product targetProduct = productRepository.findById(targetProductId).orElse(null);
+                Product targetProduct = adminProductRepository.findById(targetProductId).orElse(null);
                 if (targetProduct == null || targetProduct.getStatus() != Product.ProductStatus.ACTIVE) {
                     continue;
                 }

@@ -1,6 +1,6 @@
-package com.highlight.highlight_backend.admin.product.repository;
+package com.highlight.highlight_backend.product.repository;
 
-import com.highlight.highlight_backend.admin.product.domian.ProductImage;
+import com.highlight.highlight_backend.product.domian.ProductImage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
  * @since 2025.08.13
  */
 @Repository
-public interface ProductImageRepository extends JpaRepository<ProductImage, Long> {
+public interface AdminProductImageRepository extends JpaRepository<ProductImage, Long> {
     
 
     /**

@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.admin.user.domain;
 
+import com.highlight.highlight_backend.admin.user.dto.AdminSignUpRequestDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -138,5 +139,13 @@ public class Admin {
         public String getDescription() {
             return description;
         }
+    }
+
+    public void setFirstAdminDetail(AdminSignUpRequestDto signUpRequestDto, Admin newAdmin) {
+        newAdmin.setAdminId(signUpRequestDto.getAdminId());
+        newAdmin.setAdminName(signUpRequestDto.getAdminId()); // 이름은 ID와 동일하게 설정
+        newAdmin.setEmail(signUpRequestDto.getAdminId() + "@admin.com"); // 임시 이메일
+        newAdmin.setRole(Admin.AdminRole.ADMIN); // 기본적으로 일반 관리자
+        newAdmin.setActive(true);
     }
 }

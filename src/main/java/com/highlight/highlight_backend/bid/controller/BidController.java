@@ -1,14 +1,14 @@
-package com.highlight.highlight_backend.controller;
+package com.highlight.highlight_backend.bid.controller;
 
 import com.highlight.highlight_backend.common.util.AuthenticationUtils;
 import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
-import com.highlight.highlight_backend.dto.BidResponseDto;
+import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.dto.WinBidDetailResponseDto;
-import com.highlight.highlight_backend.dto.AuctionMyResultResponseDto;
-import com.highlight.highlight_backend.service.BidService;
+import com.highlight.highlight_backend.bid.dto.WinBidDetailResponseDto;
+import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
+import com.highlight.highlight_backend.bid.service.BidService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,13 +35,11 @@ import java.util.HashMap;
  * 입찰 관련 컨트롤러
  * 
  * 경매 입찰 참여, 입찰 내역 조회, 실시간 경매 상태 조회 API를 제공합니다.
- * 
- * @author 전우선
- * @since 2025.08.15
+ *
  */
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/bid")
 @RequiredArgsConstructor
 @Tag(name = "입찰 및 경매 상태", description = "입찰 참여, 입찰 내역 조회, 경매 상태 조회, 낙찰 내역 API")
 public class BidController {

@@ -1,9 +1,10 @@
 package com.highlight.highlight_backend.admin.auction.controller;
 
 import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
-import com.highlight.highlight_backend.admin.auction.service.AdminAuctionSearchService;
+import com.highlight.highlight_backend.auction.service.AdminAuctionSearchService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequestMapping("/api/admin/auctions")
 @RequiredArgsConstructor
+@Tag(name = "경매 목록 조회 (관리자)", description = "관리자 경매 목록 조회 API")
 public class AdminAuctionSearchController {
 
     private final AdminAuctionSearchService adminAuctionSearchService;

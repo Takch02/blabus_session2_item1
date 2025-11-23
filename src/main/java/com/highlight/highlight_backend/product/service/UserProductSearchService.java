@@ -1,19 +1,16 @@
-package com.highlight.highlight_backend.search.service;
+package com.highlight.highlight_backend.product.service;
 
-
-import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.admin.product.domian.Product;
 import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
+import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
-import com.highlight.highlight_backend.search.dto.UserAuctionResponseDto;
-import com.highlight.highlight_backend.repository.BidRepository;
+import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.repository.spec.AuctionSpecs;
 import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
-import com.highlight.highlight_backend.search.repository.SearchRepository;
+import com.highlight.highlight_backend.search.dto.UserAuctionResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -26,19 +23,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
-/**
- * 일반 User 인증없이 보여줄 정보를 처리하는 Service
- *
- */
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
-public class SearchService {
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class UserProductSearchService {
 
-    private final SearchRepository searchRepository;
     private final BidRepository bidRepository;
-    private final ProductRepository productRepository;
     private final AuctionRepository auctionRepository;
 
     /**
@@ -46,7 +37,6 @@ public class SearchService {
      * JapRepository 에서 Specification 을 이용하여 필터링
      * @return UserAuctionResponseDto 반환
      */
-
     public Page<UserAuctionResponseDto> getProductsFiltered(
             String category, Long minPrice, Long maxPrice, String brand, String eventName,
             Boolean isPremium, String status, String sortCode, Pageable pageable) {
@@ -78,7 +68,7 @@ public class SearchService {
         Pageable newPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         // 3. Repository 호출
-        Page<Auction> auctionPage = searchRepository.findAll(spec, newPageable);
+        Page<Auction> auctionPage = auctionRepository.findAll(spec, newPageable);
 
         // 4. DTO로 변환하여 반환 (사용자별 최신 입찰 기준 통계 적용)
         return auctionPage.map(auction -> {
@@ -108,7 +98,7 @@ public class SearchService {
      * 경매 ID를 통해 상품의 상세 정보를 가져옴
      */
     public UserAuctionDetailResponseDto getProductsDetail(Long auctionId) {
-        Auction auction = searchRepository.findOne(auctionId);
+        Auction auction = auctionRepository.findOne(auctionId);
         BigDecimal currentPrice = auction.getCurrentHighestBid();
         // 3. 적립될 포인트를 계산합니다. (기본값은 0으로 설정)
         BigDecimal pointReward = BigDecimal.ZERO;
@@ -138,11 +128,11 @@ public class SearchService {
         log.info("관련 상품 추천 조회: {} (개수: {})", productId, size);
 
         // 1. 기준 상품 조회
-        Product baseProduct = productRepository.findById(productId)
+        Product baseProduct = adminProductRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 2. 추천 로직: 동일 카테고리 또는 동일 브랜드 상품 조회
-        List<Product> recommendedProducts = productRepository.findRecommendedProducts(
+        List<Product> recommendedProducts = adminProductRepository.findRecommendedProducts(
                 productId,
                 baseProduct.getCategory(),
                 baseProduct.getBrand(),
@@ -166,10 +156,10 @@ public class SearchService {
      **/
     public Page<ViewTogetherProductResponseDto> getViewedTogetherProducts(Long productId, int size) {
         // 1. 기준 상품 조회
-        Product baseProduct = productRepository.findById(productId)
+        Product baseProduct = adminProductRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
-        List<Product> similarProducts = productRepository.findRecommendedProductsWithAuction(
+        List<Product> similarProducts = adminProductRepository.findRecommendedProductsWithAuction(
                 baseProduct.getId(),
                 baseProduct.getCategory(),
                 baseProduct.getBrand(),
@@ -180,7 +170,7 @@ public class SearchService {
         List<ViewTogetherProductResponseDto> result = similarProducts.stream()
                 .map(product -> {
                     // 활성 경매 혹은 예약 경매 찾기
-                    Auction auction = auctionRepository.findActiveOrScheduledAuctionByProductId(product.getId())
+                    Auction auction = adminAuctionRepository.findActiveOrScheduledAuctionByProductId(product.getId())
                             .orElse(null);
 
                     // 경매가 없으면 추천에서 제외할지, 아니면 그냥 보여줄지 정책 결정 (여기선 보여준다고 가정)
@@ -194,6 +184,4 @@ public class SearchService {
 
         return new PageImpl<>(result, PageRequest.of(0, size), result.size());
     }
-
-
 }

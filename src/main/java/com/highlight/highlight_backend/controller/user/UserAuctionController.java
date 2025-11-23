@@ -3,7 +3,7 @@ package com.highlight.highlight_backend.controller.user;
 import com.highlight.highlight_backend.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.admin.auction.service.AdminAuctionService;
+import com.highlight.highlight_backend.auction.service.AdminAuctionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

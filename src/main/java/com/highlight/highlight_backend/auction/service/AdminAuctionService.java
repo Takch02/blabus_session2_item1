@@ -1,13 +1,16 @@
-package com.highlight.highlight_backend.admin.auction.service;
+package com.highlight.highlight_backend.auction.service;
 
 import com.highlight.highlight_backend.admin.user.domain.Admin;
-import com.highlight.highlight_backend.admin.validator.CommonValidator;
+import com.highlight.highlight_backend.admin.validator.AdminValidator;
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.admin.product.domian.Product;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionStartRequestDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionUpdateRequestDto;
+import com.highlight.highlight_backend.auction.validator.AuctionValidator;
+import com.highlight.highlight_backend.common.util.TimeUtils;
 import com.highlight.highlight_backend.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
@@ -15,10 +18,10 @@ import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.repository.BidRepository;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
-import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
+import com.highlight.highlight_backend.bid.repository.BidRepository;
+import com.highlight.highlight_backend.product.repository.AdminProductRepository;
+import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.service.AuctionSchedulerService;
 import com.highlight.highlight_backend.service.WebSocketService;
 import com.highlight.highlight_backend.user.domain.User;
@@ -31,8 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * 경매 관리 서비스
- * 
+ * 관리자 경매 관리 서비스
+ *
  * 경매 예약, 시작, 종료, 중단 기능을 제공합니다.
  */
 @Slf4j
@@ -40,9 +43,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminAuctionService {
-    
+
+    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
-    private final ProductRepository productRepository;
+    private final AdminProductRepository adminProductRepository;
     private final AdminRepository adminRepository;
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
@@ -50,11 +54,12 @@ public class AdminAuctionService {
     private final WebSocketService webSocketService;
     private final AuctionSchedulerService auctionSchedulerService;
 
-    private final CommonValidator commonValidator;
-    
+    private final AuctionValidator auctionValidator;
+    private final AdminValidator adminValidator;
+
     /**
      * 경매 예약
-     * 
+     *
      * @param request 경매 예약 요청 데이터
      * @param adminId 예약하는 관리자 ID
      * @return 예약된 경매 정보
@@ -62,37 +67,27 @@ public class AdminAuctionService {
     @Transactional
     public AuctionResponseDto scheduleAuction(AuctionScheduleRequestDto request, Long adminId) {
         log.info("경매 예약 요청: 상품 {} (관리자: {})", request.getProductId(), adminId);
-        
+
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
-        
+        adminValidator.validateManagePermission(adminId);
+
         // 2. 상품 조회 및 검증
-        Product product = productRepository.getOrThrow(request.getProductId());
+        Product product = adminProductRepository.getOrThrow(request.getProductId());
 
         // 3. 상품이 이미 경매에 등록되어 있는지 확인
         if (auctionRepository.existsByProductId(request.getProductId())) {
             throw new BusinessException(AuctionErrorCode.PRODUCT_ALREADY_IN_AUCTION);
         }
-        
-        // 4. 상품 상태 확인 (ACTIVE 상태만 경매 가능)
-        if (product.getStatus() != Product.ProductStatus.ACTIVE) {
-            throw new BusinessException(AuctionErrorCode.INVALID_PRODUCT_STATUS_FOR_AUCTION);
-        }
-        
+
         // 5. UTC 시간을 한국 시간으로 변환
-        LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
-        LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
-        
-        // 6. 경매 시간 검증
-        commonValidator.validateAuctionTime(kstStartTime, kstEndTime);
-        
-        // 7. 즉시구매가 설정 시 재고 1개 검증
-        commonValidator.validateBuyItNowProductCount(product, request.getBuyItNowPrice());
-        
-        // 8. 경매 엔티티 생성
-        Auction auction = new Auction();
-        auction.addDetail(product, adminId, kstStartTime, kstEndTime, request);
-        Auction savedAuction = auctionRepository.save(auction);
+        LocalDateTime kstStartTime = TimeUtils.convertUTCToKST(request.getScheduledStartTime());
+        LocalDateTime kstEndTime = TimeUtils.convertUTCToKST(request.getScheduledEndTime());
+
+        // 6. 상품 상태, 경매 시간, 재고 1개 검증
+        auctionValidator.validateAuctionCreation(product, kstStartTime, kstEndTime, request.getBuyItNowPrice());
+
+        // 7. 경매 엔티티 생성
+        Auction savedAuction = createAuction(request, adminId, product, kstStartTime, kstEndTime);
 
         // 8. 상품 상태를 경매대기로 변경
         product.setStatus(Product.ProductStatus.AUCTION_READY);
@@ -100,19 +95,20 @@ public class AdminAuctionService {
         // 9. 경매 시작 스케줄링 설정
         auctionSchedulerService.scheduleAuctionStart(savedAuction);
 
-        // 10. 관리자 경매 보류 건수 증가
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
-        adminRepository.save(admin);
-
         log.info("경매 예약 완료: {} (ID: {}), 스케줄링 설정됨", product.getProductName(), savedAuction.getId());
-        
+
         return AuctionResponseDto.from(savedAuction);
     }
-    
+
+    private Auction createAuction(AuctionScheduleRequestDto request, Long adminId, Product product, LocalDateTime kstStartTime, LocalDateTime kstEndTime) {
+        Auction auction = new Auction();
+        auction.addDetail(product, adminId, kstStartTime, kstEndTime, request);
+        return auctionQueryRepository.save(auction);
+    }
+
     /**
      * 경매 시작
-     * 
+     *
      * @param auctionId 시작할 경매 ID
      * @param request 경매 시작 요청 데이터
      * @param adminId 시작하는 관리자 ID
@@ -120,23 +116,22 @@ public class AdminAuctionService {
      */
     @Transactional
     public AuctionResponseDto startAuction(Long auctionId, AuctionStartRequestDto request, Long adminId) {
-        log.info("경매 시작 요청: {} (관리자: {}, 즉시시작: {})", 
+        log.info("경매 시작 요청: {} (관리자: {}, 즉시시작: {})",
                 auctionId, adminId, request.isImmediateStart());
-        
+
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
-        
+        adminValidator.validateManagePermission(adminId);
+
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
+        auctionValidator.validateAuctionStart(auction);
         // 3. 경매 시작 가능 여부 확인
-        if (!auction.canStart()) {
-            throw new BusinessException(AuctionErrorCode.CANNOT_START_AUCTION);
-        }
+
 
         // 스케줄된 시작 작업이 있다면 취소
         auctionSchedulerService.cancelScheduledStart(auctionId);
-        
+
         // 4. 즉시 시작 vs 시간 입력 처리
         if (request.isImmediateStart()) {
             // 즉시 시작: 현재 시간으로 시작, 기존 종료 시간 유지 또는 1시간 후로 설정
@@ -146,17 +141,17 @@ public class AdminAuctionService {
             }
         } else {
             // 시간 입력: UTC 시간을 한국 시간으로 변환하여 설정
-            LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
-            LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
-            commonValidator.validateAuctionTime(kstStartTime, kstEndTime);
+            LocalDateTime kstStartTime = TimeUtils.convertUTCToKST(request.getScheduledStartTime());
+            LocalDateTime kstEndTime = TimeUtils.convertUTCToKST(request.getScheduledEndTime());
+            auctionValidator.validateAuctionTime(kstStartTime, kstEndTime);
             auction.setScheduledStartTime(kstStartTime);
             auction.setScheduledEndTime(kstEndTime);
             auction.startAuction(adminId);
         }
-        
+
         // 5. 상품 상태를 경매중으로 변경
         auction.getProduct().setStatus(Product.ProductStatus.IN_AUCTION);
-        
+
         // 6. WebSocket으로 경매 시작 알림 전송
         webSocketService.sendAuctionStartedNotification(auction);
 
@@ -164,10 +159,10 @@ public class AdminAuctionService {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
         adminRepository.save(admin);
-        
-        log.info("경매 시작 완료: {} (ID: {})", 
+
+        log.info("경매 시작 완료: {} (ID: {})",
                 auction.getProduct().getProductName(), auction.getId());
-        
+
         return AuctionResponseDto.from(auction);
     }
 
@@ -178,7 +173,7 @@ public class AdminAuctionService {
     @Transactional
     public AuctionResponseDto cancelAuction(Long auctionId, Long adminId) {
         // 1. 검증
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
         if (!auction.canEnd()) { // 혹은 canCancel() 별도 구현 추천
@@ -210,7 +205,7 @@ public class AdminAuctionService {
                 auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
 
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
@@ -254,7 +249,7 @@ public class AdminAuctionService {
         return endAuction(auctionId, adminId, "관리자 즉시 종료");
     }
 
-    
+
     /**
      * 즉시구매 처리 -> 뭔가 이상해 포인트를 사용하지 않고있어. 나중에 반드시 다시 수정할 것
      *
@@ -269,27 +264,32 @@ public class AdminAuctionService {
         // 1. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
+        // 사용자 존재 확인
+        if (!userRepository.existsById(userId)) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+        }
+
         // 2. 즉시구매 가능 여부 검증
-        validateBuyItNowEligibility(auction, userId);
+        auctionValidator.validateBuyItNowEligibility(auction);
 
         // 스케줄된 시작 작업이 있다면 취소
         auctionSchedulerService.cancelScheduledStart(auctionId);
-        
+
         // 3. 즉시구매 처리
         Bid buyItNowBid = createBuyItNowBid(auction, userId);
-        
+
         // 4. 경매 즉시 종료
         auction.endAuction(null, "즉시구매로 인한 경매 종료");
         auction.getProduct().setStatus(Product.ProductStatus.AUCTION_COMPLETED);
-        
+
         // 5. 낙찰 처리
         buyItNowBid.setAsWon();
         // 6. WebSocket 알림 전송
         webSocketService.sendAuctionEndedNotification(auction, buyItNowBid);
-        
-        log.info("즉시구매 완료: 경매 {} (사용자: {}, 가격: {})", 
+
+        log.info("즉시구매 완료: 경매 {} (사용자: {}, 가격: {})",
                 auctionId, userId, auction.getBuyItNowPrice());
-        
+
         return BuyItNowResponseDto.from(auction, userId);
     }
 
@@ -307,7 +307,7 @@ public class AdminAuctionService {
         log.info("경매 수정 요청: 경매 {} (관리자: {})", auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
 
         // 2. 경매 조회 및 검증
         Auction auction = auctionRepository.getOrThrow(auctionId);
@@ -326,13 +326,13 @@ public class AdminAuctionService {
 
         // 6. 시작/종료 시간이 모두 설정된 경우 시간 검증
         if (auction.getScheduledStartTime() != null && auction.getScheduledEndTime() != null) {
-            commonValidator.validateAuctionTime(auction.getScheduledStartTime(), auction.getScheduledEndTime());
+            auctionValidator.validateAuctionTime(auction.getScheduledStartTime(), auction.getScheduledEndTime());
         }
 
         // 7. 상품 변경
         if (request.getProductId() != null && !request.getProductId().equals(auction.getProduct().getId())) {
             // 새로운 상품 조회 및 검증
-            Product newProduct = productRepository.getOrThrow(request.getProductId());
+            Product newProduct = adminProductRepository.getOrThrow(request.getProductId());
 
             // 새 상품이 이미 경매에 등록되어 있는지 확인
             if (auctionRepository.existsByProductId(request.getProductId())) {
@@ -347,12 +347,13 @@ public class AdminAuctionService {
             auction.setProduct(newProduct);
         }
 
-        LocalDateTime kstEndTime = commonValidator.convertUTCToKST(request.getScheduledEndTime());
-        LocalDateTime kstStartTime = commonValidator.convertUTCToKST(request.getScheduledStartTime());
+        LocalDateTime kstEndTime = TimeUtils.convertUTCToKST(request.getScheduledEndTime());
+        LocalDateTime kstStartTime = TimeUtils.convertUTCToKST(request.getScheduledStartTime());
 
+        // 수정 시 즉시 구매가는 null 일 수 있음
         if (request.getBuyItNowPrice() != null) {
             // 즉시구매가 설정 시 재고 1개 검증
-            commonValidator.validateBuyItNowProductCount(auction.getProduct(), request.getBuyItNowPrice());
+            auctionValidator.validateSingleItemForBuyItNow(auction.getProduct());
             auction.setBuyItNowPrice(request.getBuyItNowPrice());
         }
         // updateDetail 을 통해 한번에 update
@@ -363,28 +364,6 @@ public class AdminAuctionService {
         return AuctionResponseDto.from(auction);
     }
 
-    /**
-     * 즉시구매 가능 여부 검증
-     */
-    private void validateBuyItNowEligibility(Auction auction, Long userId) {
-        // 경매가 진행중인지 확인
-        if (!auction.isInProgress()) {
-            throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
-        }
-
-        // 즉시구매가가 설정되어 있는지 확인
-        if (auction.getBuyItNowPrice() == null || auction.getBuyItNowPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new BusinessException(AuctionErrorCode.BUY_IT_NOW_NOT_AVAILABLE);
-        }
-
-        // 재고가 1개인지 확인
-        if (auction.getProduct().getProductCount() != 1) {
-            throw new BusinessException(AuctionErrorCode.BUY_IT_NOW_ONLY_FOR_SINGLE_ITEM);
-        }
-
-        // 사용자 존재 여부 확인
-        commonValidator.validateUserExists(userId);
-    }
 
     /**
      * 즉시구매 입찰 생성

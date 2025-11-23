@@ -1,11 +1,11 @@
-package com.highlight.highlight_backend.admin.product.service;
+package com.highlight.highlight_backend.product.service;
 
-import com.highlight.highlight_backend.admin.product.domian.Product;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
+import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.product.repository.AdminProductRepository;
 import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.admin.validator.CommonValidator;
+import com.highlight.highlight_backend.admin.validator.AdminValidator;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +28,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ProductService {
+public class AdminProductService {
     
-    private final ProductRepository productRepository;
+    private final AdminProductRepository adminProductRepository;
 
-    private final CommonValidator commonValidator;
+    private final AdminValidator adminValidator;
 
-    private final ProductImageService productImageService;
+    private final AdminProductImageService adminProductImageService;
 
     
     /**
@@ -49,17 +49,17 @@ public class ProductService {
         log.info("상품 등록 요청: {} (관리자: {})", request.getProductName(), adminId);
         
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
         // 2. 상품 엔티티 생성
         Product product = new Product().setFirstProductDetail(request, adminId);
 
         // 3. 상품 저장
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct = adminProductRepository.save(product);
         
         // 4. 상품 이미지 처리
         if (request.getImages() != null && !request.getImages().isEmpty()) {
-            productImageService.processProductImages(savedProduct, request.getImages());
+            adminProductImageService.processProductImages(savedProduct, request.getImages());
         }
         
         log.info("상품 등록 완료: {} (ID: {})", savedProduct.getProductName(), savedProduct.getId());
@@ -82,15 +82,15 @@ public class ProductService {
         log.info("상품 수정 요청: {} (관리자: {})", productId, adminId);
         
         // 1. 관리자 권한 확인
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
         // 2. 상품 조회
-        Product product = productRepository.findByIdWithImages(productId)
+        Product product = adminProductRepository.findByIdWithImages(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 3. 상품 이미지 업데이트
         if (request.getImages() != null) {
-            productImageService.updateProductImages(product, request.getImages());
+            adminProductImageService.updateProductImages(product, request.getImages());
         }
         product.updateProductDetail(request, product);
         
@@ -109,9 +109,9 @@ public class ProductService {
     public Page<ProductResponseDto> getProductList(Pageable pageable, Long adminId) {
         log.info("상품 목록 조회 요청 (관리자: {})", adminId);
         
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
-        return productRepository.findByRegisteredByOrderByCreatedAtDesc(adminId, pageable)
+        return adminProductRepository.findByRegisteredByOrderByCreatedAtDesc(adminId, pageable)
             .map(ProductResponseDto::from);
     }
     
@@ -125,9 +125,9 @@ public class ProductService {
     public ProductResponseDto getProduct(Long productId, Long adminId) {
         log.info("상품 상세 조회 요청: {} (관리자: {})", productId, adminId);
         
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
-        Product product = productRepository.findByIdWithImages(productId)
+        Product product = adminProductRepository.findByIdWithImages(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         return ProductResponseDto.from(product);
@@ -143,9 +143,9 @@ public class ProductService {
     public void deleteProduct(Long productId, Long adminId) {
         log.info("상품 삭제 요청: {} (관리자: {})", productId, adminId);
         
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
-        Product product = productRepository.findById(productId)
+        Product product = adminProductRepository.findById(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         // 경매 중인 상품은 삭제 불가
@@ -153,7 +153,7 @@ public class ProductService {
             throw new BusinessException(ProductErrorCode.CANNOT_DELETE_AUCTION_PRODUCT);
         }
         
-        productRepository.delete(product);
+        adminProductRepository.delete(product);
         
         log.info("상품 삭제 완료: {} (ID: {})", product.getProductName(), product.getId());
     }
@@ -172,10 +172,10 @@ public class ProductService {
         log.info("상품 프리미엄 설정 변경: 상품={}, 프리미엄={}, 관리자={}", productId, isPremium, adminId);
         
         // 관리자 권한 검증
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
         
         // 상품 조회
-        Product product = productRepository.findById(productId)
+        Product product = adminProductRepository.findById(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         // 프리미엄 설정 변경

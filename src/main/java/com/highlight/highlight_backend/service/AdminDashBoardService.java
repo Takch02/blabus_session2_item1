@@ -2,13 +2,13 @@ package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.admin.user.domain.Admin;
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.admin.product.domian.ProductImage;
+import com.highlight.highlight_backend.product.domian.ProductImage;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardItemResponseDto;
 import com.highlight.highlight_backend.dto.dashboard.AdminDashBoardStatsResponseDto;
 import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class AdminDashBoardService {
 
     private final AdminRepository adminRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionQueryRepository auctionQueryRepository;
 
     public AdminDashBoardStatsResponseDto getDashboardStats(Long adminId) {
         // 1. Admin 엔티티 조회 (기존과 동일)
@@ -34,7 +34,7 @@ public class AdminDashBoardService {
                 .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
 
         // 2. 해당 Admin이 관리하는 모든 Auction 리스트 조회
-        List<Auction> auctions = auctionRepository.findByAdminAuction(adminId);
+        List<Auction> auctions = auctionQueryRepository.findByAdminAuction(adminId);
 
         Map<Auction.AuctionStatus, Long> statusCounts = auctions.stream()
                 .collect(Collectors.groupingBy(Auction::getStatus, Collectors.counting()));
@@ -56,7 +56,7 @@ public class AdminDashBoardService {
     }
 
     public List<AdminDashBoardItemResponseDto> getDashboardItems() {
-        List<Auction> inProgressAuctions = auctionRepository.findByStatus(Auction.AuctionStatus.IN_PROGRESS, PageRequest.of(0, 3)).getContent();
+        List<Auction> inProgressAuctions = auctionQueryRepository.findByStatus(Auction.AuctionStatus.IN_PROGRESS, PageRequest.of(0, 3)).getContent();
 
         return inProgressAuctions.stream()
                 .map(auction -> {

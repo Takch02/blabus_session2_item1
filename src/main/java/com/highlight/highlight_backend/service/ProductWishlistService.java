@@ -6,7 +6,7 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.WishlistErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
-import com.highlight.highlight_backend.admin.product.repository.ProductRepository;
+import com.highlight.highlight_backend.product.repository.AdminProductRepository;
 import com.highlight.highlight_backend.repository.ProductWishlistRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ import java.util.Optional;
 public class ProductWishlistService {
     
     private final ProductWishlistRepository wishlistRepository;
-    private final ProductRepository productRepository;
+    private final AdminProductRepository adminProductRepository;
     private final UserRepository userRepository;
     
     /**
@@ -203,7 +203,7 @@ public class ProductWishlistService {
         validateUser(userId);
         
         // 상품 존재 확인
-        if (!productRepository.existsById(productId)) {
+        if (!adminProductRepository.existsById(productId)) {
             throw new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
         }
     }
