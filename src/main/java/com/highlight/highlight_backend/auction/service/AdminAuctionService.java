@@ -1,29 +1,25 @@
 package com.highlight.highlight_backend.auction.service;
 
-import com.highlight.highlight_backend.admin.user.domain.Admin;
-import com.highlight.highlight_backend.admin.validator.AdminValidator;
+import com.highlight.highlight_backend.admin.service.AdminAuthService;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
-import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestDto;
-import com.highlight.highlight_backend.admin.auction.dto.AuctionStartRequestDto;
-import com.highlight.highlight_backend.admin.auction.dto.AuctionUpdateRequestDto;
+import com.highlight.highlight_backend.auction.dto.AuctionResponseDto;
+import com.highlight.highlight_backend.auction.dto.AuctionScheduleRequestDto;
+import com.highlight.highlight_backend.auction.dto.AuctionStartRequestDto;
+import com.highlight.highlight_backend.auction.dto.AuctionUpdateRequestDto;
 import com.highlight.highlight_backend.auction.validator.AuctionValidator;
 import com.highlight.highlight_backend.common.util.TimeUtils;
-import com.highlight.highlight_backend.dto.BuyItNowRequestDto;
-import com.highlight.highlight_backend.dto.BuyItNowResponseDto;
+import com.highlight.highlight_backend.auction.dto.BuyItNowRequestDto;
+import com.highlight.highlight_backend.auction.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
-import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.admin.user.repository.AdminRepository;
 import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.product.repository.AdminProductRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
-import com.highlight.highlight_backend.service.AuctionSchedulerService;
-import com.highlight.highlight_backend.service.WebSocketService;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,16 +42,16 @@ public class AdminAuctionService {
 
     private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
-    private final AdminProductRepository adminProductRepository;
-    private final AdminRepository adminRepository;
+    private final AuctionNotificationService auctionNotificationService;
+    private final BidNotificationService bidNotificationService;
+    private final ProductRepository productRepository;
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
 
-    private final WebSocketService webSocketService;
     private final AuctionSchedulerService auctionSchedulerService;
 
     private final AuctionValidator auctionValidator;
-    private final AdminValidator adminValidator;
+    private final AdminAuthService adminService;
 
     /**
      * 경매 예약
@@ -69,10 +65,10 @@ public class AdminAuctionService {
         log.info("경매 예약 요청: 상품 {} (관리자: {})", request.getProductId(), adminId);
 
         // 1. 관리자 권한 확인
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 2. 상품 조회 및 검증
-        Product product = adminProductRepository.getOrThrow(request.getProductId());
+        Product product = productRepository.getOrThrow(request.getProductId());
 
         // 3. 상품이 이미 경매에 등록되어 있는지 확인
         if (auctionRepository.existsByProductId(request.getProductId())) {
@@ -120,14 +116,13 @@ public class AdminAuctionService {
                 auctionId, adminId, request.isImmediateStart());
 
         // 1. 관리자 권한 확인
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
-        auctionValidator.validateAuctionStart(auction);
         // 3. 경매 시작 가능 여부 확인
-
+        auctionValidator.validateAuctionStart(auction);
 
         // 스케줄된 시작 작업이 있다면 취소
         auctionSchedulerService.cancelScheduledStart(auctionId);
@@ -153,12 +148,7 @@ public class AdminAuctionService {
         auction.getProduct().setStatus(Product.ProductStatus.IN_AUCTION);
 
         // 6. WebSocket으로 경매 시작 알림 전송
-        webSocketService.sendAuctionStartedNotification(auction);
-
-        // 7. 관리자 경매 상태 카운트 업데이트 (pending -> inProgress)
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
-        adminRepository.save(admin);
+        auctionNotificationService.sendAuctionStartedNotification(auction);
 
         log.info("경매 시작 완료: {} (ID: {})",
                 auction.getProduct().getProductName(), auction.getId());
@@ -173,24 +163,23 @@ public class AdminAuctionService {
     @Transactional
     public AuctionResponseDto cancelAuction(Long auctionId, Long adminId) {
         // 1. 검증
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
-        if (!auction.canEnd()) { // 혹은 canCancel() 별도 구현 추천
-            throw new BusinessException(AuctionErrorCode.CANNOT_END_AUCTION);
-        }
+        // 2. 경매가 종료될 수 있는 상태인지 검증
+        auctionValidator.validateAuctionEnd(auction);
 
-        // 2. 스케줄 취소
+        // 3. 스케줄 취소
         auctionSchedulerService.cancelScheduledStart(auctionId);
 
-        // 3. 상태 변경 (중단)
+        // 4. 상태 변경 (중단)
         auction.cancelAuction(adminId, "관리자 강제 중단");
 
         // [중요] 상품을 다시 판매 가능한 상태(ACTIVE)로 되돌림
         auction.getProduct().setStatus(Product.ProductStatus.ACTIVE);
 
-        // 4. 알림 전송 (중단 알림만 전송)
-        webSocketService.sendAuctionCancelledNotification(auction);
+        // 5. 알림 전송 (중단 알림만 전송)
+        auctionNotificationService.sendAuctionCancelledNotification(auction);
 
         log.info("경매 중단 완료: {} (ID: {})", auction.getProduct().getProductName(), auctionId);
         return AuctionResponseDto.from(auction);
@@ -205,41 +194,38 @@ public class AdminAuctionService {
                 auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 2. 경매 조회
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
         // 3. 경매 종료 가능 여부 확인
-        if (!auction.canEnd()) {
-            throw new BusinessException(AuctionErrorCode.CANNOT_END_AUCTION);
-        }
+        auctionValidator.validateAuctionEnd(auction);
 
-        // 스케줄된 시작 작업이 있다면 취소
+        // 4. 스케줄된 시작 작업이 있다면 취소
         auctionSchedulerService.cancelScheduledStart(auctionId);
 
 
-        // 4. 낙찰자 조회 (정상 종료인 경우)
+        // 5. 낙찰자 조회 (정상 종료인 경우)
         Bid winnerBid = bidRepository.findCurrentHighestBidByAuction(auction).orElse(null);
         if (winnerBid != null) {
             winnerBid.setAsWon(); // 낙찰 상태로 변경
             bidRepository.save(winnerBid);
         }
 
-        // 5. 정상 종료 처리
+        // 6. 정상 종료 처리
         auction.endAuction(adminId, endReason);
         auction.getProduct().setStatus(Product.ProductStatus.AUCTION_COMPLETED);
 
         // 6. WebSocket으로 경매 종료 알림 전송
-        webSocketService.sendAuctionEndedNotification(auction, winnerBid);
+        auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
 
         // 7. 낙찰자에게 결제 필요 알림 전송
-        if (winnerBid != null) {
-            webSocketService.sendPaymentRequiredNotification(auctionId, winnerBid.getBidAmount());
-        }
+        bidNotificationService.notifyWin(winnerBid);
 
         return AuctionResponseDto.from(auction);
     }
+
 
     /**
      * 경매 즉시 정상 종료 (현재 최고 입찰자를 낙찰자로 선정)
@@ -265,9 +251,7 @@ public class AdminAuctionService {
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
         // 사용자 존재 확인
-        if (!userRepository.existsById(userId)) {
-            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
-        }
+        validateUser(userId);
 
         // 2. 즉시구매 가능 여부 검증
         auctionValidator.validateBuyItNowEligibility(auction);
@@ -285,12 +269,18 @@ public class AdminAuctionService {
         // 5. 낙찰 처리
         buyItNowBid.setAsWon();
         // 6. WebSocket 알림 전송
-        webSocketService.sendAuctionEndedNotification(auction, buyItNowBid);
+        auctionNotificationService.notifyAuctionEnded(auction, buyItNowBid.getUser().getNickname());
 
         log.info("즉시구매 완료: 경매 {} (사용자: {}, 가격: {})",
                 auctionId, userId, auction.getBuyItNowPrice());
 
         return BuyItNowResponseDto.from(auction, userId);
+    }
+
+    private void validateUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+        }
     }
 
 
@@ -307,22 +297,16 @@ public class AdminAuctionService {
         log.info("경매 수정 요청: 경매 {} (관리자: {})", auctionId, adminId);
 
         // 1. 관리자 권한 확인
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 2. 경매 조회 및 검증
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
         // 3. 경매 상태 검증 (진행 중인 경매는 수정 불가)
-        if (auction.getStatus() == Auction.AuctionStatus.IN_PROGRESS) {
-            throw new BusinessException(AuctionErrorCode.CANNOT_MODIFY_IN_PROGRESS_AUCTION);
-        }
+        auctionValidator.validateAuctionProgress(auction);
 
         // 4. 경매가 완료되었거나 취소된 경우 수정 불가
-        if (auction.getStatus() == Auction.AuctionStatus.COMPLETED ||
-            auction.getStatus() == Auction.AuctionStatus.CANCELLED ||
-            auction.getStatus() == Auction.AuctionStatus.FAILED) {
-            throw new BusinessException(AuctionErrorCode.CANNOT_MODIFY_ENDED_AUCTION);
-        }
+        auctionValidator.validateAuctionCompleteOrFailed(auction);
 
         // 6. 시작/종료 시간이 모두 설정된 경우 시간 검증
         if (auction.getScheduledStartTime() != null && auction.getScheduledEndTime() != null) {
@@ -332,7 +316,7 @@ public class AdminAuctionService {
         // 7. 상품 변경
         if (request.getProductId() != null && !request.getProductId().equals(auction.getProduct().getId())) {
             // 새로운 상품 조회 및 검증
-            Product newProduct = adminProductRepository.getOrThrow(request.getProductId());
+            Product newProduct = productRepository.getOrThrow(request.getProductId());
 
             // 새 상품이 이미 경매에 등록되어 있는지 확인
             if (auctionRepository.existsByProductId(request.getProductId())) {
@@ -340,9 +324,7 @@ public class AdminAuctionService {
             }
 
             // 새 상품 상태 확인 (ACTIVE 상태만 경매 가능)
-            if (newProduct.getStatus() != Product.ProductStatus.ACTIVE) {
-                throw new BusinessException(AuctionErrorCode.INVALID_PRODUCT_STATUS_FOR_AUCTION);
-            }
+            auctionValidator.validateProductStatus(newProduct);
 
             auction.setProduct(newProduct);
         }
@@ -363,6 +345,7 @@ public class AdminAuctionService {
 
         return AuctionResponseDto.from(auction);
     }
+
 
 
     /**

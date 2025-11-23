@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.admin.product;
 
-import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
-import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
+import com.highlight.highlight_backend.product.dto.ProductCreateRequestDto;
+import com.highlight.highlight_backend.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.product.service.AdminProductService;
 import org.junit.jupiter.api.DisplayName;

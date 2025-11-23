@@ -1,8 +1,8 @@
 package com.highlight.highlight_backend.user.controller;
 
 import com.highlight.highlight_backend.common.util.ResponseUtils;
-import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
-import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
+import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestCodeDto;
+import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.user.service.UserService;
 import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
