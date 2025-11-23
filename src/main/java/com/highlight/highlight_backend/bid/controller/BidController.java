@@ -2,8 +2,8 @@ package com.highlight.highlight_backend.bid.controller;
 
 import com.highlight.highlight_backend.common.util.AuthenticationUtils;
 import com.highlight.highlight_backend.common.util.ResponseUtils;
-import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
-import com.highlight.highlight_backend.dto.BidCreateRequestDto;
+import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
+import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.bid.dto.WinBidDetailResponseDto;

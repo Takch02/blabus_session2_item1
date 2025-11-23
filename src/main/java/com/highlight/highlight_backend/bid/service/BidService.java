@@ -1,11 +1,11 @@
 package com.highlight.highlight_backend.bid.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
-import com.highlight.highlight_backend.service.WebSocketService;
 import com.highlight.highlight_backend.user.domain.User;
-import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
-import com.highlight.highlight_backend.dto.BidCreateRequestDto;
+import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
+import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.bid.dto.WinBidDetailResponseDto;
 import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
@@ -41,7 +41,7 @@ public class BidService {
     private final BidRepository bidRepository;
     private final AuctionQueryRepository auctionQueryRepository;
     private final UserRepository userRepository;
-    private final WebSocketService webSocketService;
+    private final BidNotificationService bidNotificationService;
     
     /**
      * 입찰 참여
@@ -107,11 +107,11 @@ public class BidService {
         updateAuctionInfo(auction, request.getBidAmount());
         
         // 9. WebSocket으로 실시간 알림 전송
-        webSocketService.sendNewBidNotification(savedBid);
+        bidNotificationService.sendNewBidNotification(savedBid);
         
         // 10. 이전 최고 입찰자에게 개인 알림 (다른 사용자인 경우)
         if (previousWinner != null && !previousWinner.getUser().getId().equals(userId)) {
-            webSocketService.sendBidOutbidNotification(previousWinner, savedBid);
+            bidNotificationService.sendBidOutbidNotification(previousWinner, savedBid);
         }
         
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());

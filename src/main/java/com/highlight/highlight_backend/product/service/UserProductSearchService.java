@@ -1,16 +1,18 @@
 package com.highlight.highlight_backend.product.service;
 
-import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
+import com.highlight.highlight_backend.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.dto.ViewTogetherProductResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.repository.spec.AuctionSpecs;
-import com.highlight.highlight_backend.search.dto.UserAuctionDetailResponseDto;
-import com.highlight.highlight_backend.search.dto.UserAuctionResponseDto;
+import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
+import com.highlight.highlight_backend.auction.spec.AuctionSpecs;
+import com.highlight.highlight_backend.product.dto.UserAuctionDetailResponseDto;
+import com.highlight.highlight_backend.product.dto.UserAuctionResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -30,7 +32,10 @@ import java.util.List;
 public class UserProductSearchService {
 
     private final BidRepository bidRepository;
+    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
+    private final ProductRepository productRepository;
+    private final ProductQueryRepository productQueryRepository;
 
     /**
      * 필터링, 정렬할 값을 가져오고 정렬한다.
@@ -98,7 +103,7 @@ public class UserProductSearchService {
      * 경매 ID를 통해 상품의 상세 정보를 가져옴
      */
     public UserAuctionDetailResponseDto getProductsDetail(Long auctionId) {
-        Auction auction = auctionRepository.findOne(auctionId);
+        Auction auction = auctionQueryRepository.findOne(auctionId);
         BigDecimal currentPrice = auction.getCurrentHighestBid();
         // 3. 적립될 포인트를 계산합니다. (기본값은 0으로 설정)
         BigDecimal pointReward = BigDecimal.ZERO;
@@ -128,11 +133,11 @@ public class UserProductSearchService {
         log.info("관련 상품 추천 조회: {} (개수: {})", productId, size);
 
         // 1. 기준 상품 조회
-        Product baseProduct = adminProductRepository.findById(productId)
+        Product baseProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 2. 추천 로직: 동일 카테고리 또는 동일 브랜드 상품 조회
-        List<Product> recommendedProducts = adminProductRepository.findRecommendedProducts(
+        List<Product> recommendedProducts = productQueryRepository.findRecommendedProducts(
                 productId,
                 baseProduct.getCategory(),
                 baseProduct.getBrand(),
@@ -148,40 +153,4 @@ public class UserProductSearchService {
         return new PageImpl<>(responseDtos, PageRequest.of(0, size), responseDtos.size());
     }
 
-
-    /**
-     * 함께 본 상품 추천 조회
-     *
-     * 카테고리 & 브렌드가 유사한 상품을 조회함
-     **/
-    public Page<ViewTogetherProductResponseDto> getViewedTogetherProducts(Long productId, int size) {
-        // 1. 기준 상품 조회
-        Product baseProduct = adminProductRepository.findById(productId)
-                .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
-
-        List<Product> similarProducts = adminProductRepository.findRecommendedProductsWithAuction(
-                baseProduct.getId(),
-                baseProduct.getCategory(),
-                baseProduct.getBrand(),
-                PageRequest.of(0, size)
-        );
-
-        // DTO 변환
-        List<ViewTogetherProductResponseDto> result = similarProducts.stream()
-                .map(product -> {
-                    // 활성 경매 혹은 예약 경매 찾기
-                    Auction auction = adminAuctionRepository.findActiveOrScheduledAuctionByProductId(product.getId())
-                            .orElse(null);
-
-                    // 경매가 없으면 추천에서 제외할지, 아니면 그냥 보여줄지 정책 결정 (여기선 보여준다고 가정)
-                    int bidCount = (auction != null) ? bidRepository.countBidsByAuction(auction).intValue() : 0;
-
-                    return ViewTogetherProductResponseDto.fromProductWithCalculatedCount(
-                            product, auction, BigDecimal.ZERO, bidCount
-                    );
-                })
-                .toList();
-
-        return new PageImpl<>(result, PageRequest.of(0, size), result.size());
-    }
 }

@@ -9,8 +9,8 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.product.repository.AdminProductImageRepository;
-import com.highlight.highlight_backend.product.repository.AdminProductRepository;
+import com.highlight.highlight_backend.product.repository.ProductImageRepository;
+import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +27,8 @@ public class MypageService {
 
 
     private final UserRepository userRepository;
-    private final AdminProductRepository adminProductRepository;
-    private final AdminProductImageRepository adminProductImageRepository;
+    private final ProductQueryRepository productQueryRepository;
+    private final ProductImageRepository productImageRepository;
     private final BidRepository bidRepository;
     private final AuctionQueryRepository auctionQueryRepository;
 
@@ -78,7 +78,7 @@ public class MypageService {
         for (Long productId : premiumProductIds) {
             try {
                 // 상품 정보 조회
-                Product product = adminProductRepository.findById(productId).orElse(null);
+                Product product = productQueryRepository.findById(productId).orElse(null);
 
                 if (product == null) {
                     log.warn("상품을 찾을 수 없습니다: productId={}", productId);
@@ -95,7 +95,7 @@ public class MypageService {
                 }
 
                 // 대표 이미지 URL 조회
-                String imageURL = adminProductImageRepository.findPrimaryImageUrlByProductId(productId);
+                String imageURL = productImageRepository.findPrimaryImageUrlByProductId(productId);
 
                 // DTO 생성 및 추가
                 MyPagePremiumImageResponseDto dto = new MyPagePremiumImageResponseDto(

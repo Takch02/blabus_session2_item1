@@ -1,14 +1,14 @@
 package com.highlight.highlight_backend.user.service;
 
 import com.highlight.highlight_backend.common.util.JwtUtil;
-import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestCodeDto;
-import com.highlight.highlight_backend.common.verification.PhoneVerificationRequestDto;
-import com.highlight.highlight_backend.common.verification.VerificationService;
-import com.highlight.highlight_backend.domain.PhoneVerification;
+import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestCodeDto;
+import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestDto;
+import com.highlight.highlight_backend.common.verification.service.VerificationService;
+import com.highlight.highlight_backend.common.verification.domain.PhoneVerification;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.SmsErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.repository.PhoneVerificationRepository;
+import com.highlight.highlight_backend.common.verification.repository.PhoneVerificationRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;

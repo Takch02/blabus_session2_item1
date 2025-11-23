@@ -1,12 +1,12 @@
 package com.highlight.highlight_backend.product.service;
 
+import com.highlight.highlight_backend.admin.service.AdminAuthService;
 import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.product.domian.ProductImage;
-import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
-import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.product.repository.AdminProductImageRepository;
-import com.highlight.highlight_backend.product.repository.AdminProductRepository;
-import com.highlight.highlight_backend.admin.validator.AdminValidator;
+import com.highlight.highlight_backend.product.dto.ProductCreateRequestDto;
+import com.highlight.highlight_backend.product.dto.ProductUpdateRequestDto;
+import com.highlight.highlight_backend.product.repository.ProductImageRepository;
+import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +32,9 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminProductImageService {
 
-    private final AdminProductRepository adminProductRepository;
-    private final AdminProductImageRepository adminProductImageRepository;
-    private final AdminValidator adminValidator;
+    private final ProductQueryRepository productQueryRepository;
+    private final ProductImageRepository productImageRepository;
+    private final AdminAuthService adminService;
 
     private final S3Service s3Service;
 
@@ -78,7 +78,7 @@ public class AdminProductImageService {
         for (ProductUpdateRequestDto.ProductImageDto imageDto : imageDtos) {
             if (!imageDto.isDeleted()) {
                 String fileName = imageDto.getId() != null ?
-                        adminProductImageRepository.findById(imageDto.getId())
+                        productImageRepository.findById(imageDto.getId())
                                 .map(ProductImage::getFileName)
                                 .orElse(generateFileName(imageDto.getOriginalFileName())) :
                         generateFileName(imageDto.getOriginalFileName());
@@ -127,10 +127,10 @@ public class AdminProductImageService {
         log.info("상품 이미지 업로드: 상품={}, 파일개수={}, 관리자={}", productId, files.length, adminId);
 
         // 관리자 권한 검증
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 상품 존재 확인
-        Product product = adminProductRepository.findById(productId)
+        Product product = productQueryRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 파일 검증
@@ -166,7 +166,7 @@ public class AdminProductImageService {
             }
         }
 
-        adminProductRepository.save(product);
+        productQueryRepository.save(product);
 
         log.info("상품 이미지 업로드 완료: {} 개 파일", imageUrls.size());
         return imageUrls;
@@ -184,14 +184,14 @@ public class AdminProductImageService {
         log.info("상품 이미지 삭제: 상품={}, 이미지={}, 관리자={}", productId, imageId, adminId);
 
         // 관리자 권한 검증
-        adminValidator.validateManagePermission(adminId);
+        adminService.validateManagePermission(adminId);
 
         // 상품 존재 확인
-        Product product = adminProductRepository.findById(productId)
+        Product product = productQueryRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 이미지 존재 확인
-        ProductImage productImage = adminProductImageRepository.findById(imageId)
+        ProductImage productImage = productImageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.IMAGE_NOT_FOUND));
 
         // 이미지가 해당 상품에 속하는지 확인
@@ -204,7 +204,7 @@ public class AdminProductImageService {
 
         // DB에서 이미지 삭제
         product.removeImage(productImage);
-        adminProductImageRepository.delete(productImage);
+        productImageRepository.delete(productImage);
 
         log.info("상품 이미지 삭제 완료: 이미지ID={}", imageId);
     }

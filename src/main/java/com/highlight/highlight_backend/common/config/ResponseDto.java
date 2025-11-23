@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.common.config;
 
-import com.highlight.highlight_backend.dto.token.RefreshTokenResponseDto;
+import com.highlight.highlight_backend.common.jwt.RefreshTokenResponseDto;
 import lombok.Getter;
 
 /**

@@ -1,8 +1,8 @@
 package com.highlight.highlight_backend.product.domian;
 
-import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
-import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.domain.Seller;
+import com.highlight.highlight_backend.product.dto.ProductCreateRequestDto;
+import com.highlight.highlight_backend.product.dto.ProductUpdateRequestDto;
+import com.highlight.highlight_backend.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

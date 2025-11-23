@@ -87,7 +87,7 @@ public class AuctionValidator {
     }
 
     // 경매가 활성화인지 검증 (시작 X)
-    private  void validateProductStatus(Product product) {
+    public void validateProductStatus(Product product) {
         if (product.getStatus() != Product.ProductStatus.ACTIVE) {
             throw new BusinessException(AuctionErrorCode.INVALID_PRODUCT_STATUS_FOR_AUCTION);
         }
@@ -114,6 +114,29 @@ public class AuctionValidator {
     public void validateAuctionStart(Auction auction) {
         if (!auction.canStart()) {
             throw new BusinessException(AuctionErrorCode.CANNOT_START_AUCTION);
+        }
+    }
+
+    /**
+     * 경매가 종료될 수 있는 상태인지 검증
+     */
+    public void validateAuctionEnd(Auction auction) {
+        if (!auction.canEnd()) {
+            throw new BusinessException(AuctionErrorCode.CANNOT_END_AUCTION);
+        }
+    }
+
+    public void validateAuctionCompleteOrFailed(Auction auction) {
+        if (auction.getStatus() == Auction.AuctionStatus.COMPLETED ||
+                auction.getStatus() == Auction.AuctionStatus.CANCELLED ||
+                auction.getStatus() == Auction.AuctionStatus.FAILED) {
+            throw new BusinessException(AuctionErrorCode.CANNOT_MODIFY_ENDED_AUCTION);
+        }
+    }
+
+    public void validateAuctionProgress(Auction auction) {
+        if (auction.getStatus() == Auction.AuctionStatus.IN_PROGRESS) {
+            throw new BusinessException(AuctionErrorCode.CANNOT_MODIFY_IN_PROGRESS_AUCTION);
         }
     }
 }

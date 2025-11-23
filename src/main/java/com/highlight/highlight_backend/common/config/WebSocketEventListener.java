@@ -1,6 +1,6 @@
 package com.highlight.highlight_backend.common.config;
 
-import com.highlight.highlight_backend.service.WebSocketService;
+import com.highlight.highlight_backend.auction.service.AuctionNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -22,7 +22,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @RequiredArgsConstructor
 public class WebSocketEventListener {
     
-    private final WebSocketService webSocketService;
+    private final AuctionNotificationService auctionNotificationService;
     
     /**
      * WebSocket 연결 성공 이벤트 처리
@@ -62,6 +62,6 @@ public class WebSocketEventListener {
      * @param auctionId 경매 ID
      */
     public void notifyConnectionLost(Long auctionId) {
-        webSocketService.sendConnectionLostNotification(auctionId);
+        auctionNotificationService.sendConnectionLostNotification(auctionId);
     }
 }
