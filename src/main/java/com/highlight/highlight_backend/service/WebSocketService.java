@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.dto.websocket.AuctionStatusWebSocketDto;
 import com.highlight.highlight_backend.dto.websocket.BidOutbidNotificationDto;
 import com.highlight.highlight_backend.dto.websocket.BidWebSocketDto;
@@ -9,7 +9,7 @@ import com.highlight.highlight_backend.dto.websocket.WebSocketMessageDto;
 import com.highlight.highlight_backend.dto.websocket.WebSocketMessageDto.WebSocketMessageType;
 import com.highlight.highlight_backend.exception.CommonErrorCode;
 import com.highlight.highlight_backend.exception.ErrorCode;
-import com.highlight.highlight_backend.repository.BidRepository;
+import com.highlight.highlight_backend.bid.repository.BidRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/public")
+@RequestMapping("/api/user")
 @RequiredArgsConstructor
 @Tag(name = "사용자 회원가입 및 로그인", description = "사용자 회원가입, 로그인, 휴대폰 인증 API")
 public class UserController {

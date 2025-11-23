@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.auction.domain;
 
 import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionUpdateRequestDto;
-import com.highlight.highlight_backend.admin.product.domian.Product;
+import com.highlight.highlight_backend.product.domian.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

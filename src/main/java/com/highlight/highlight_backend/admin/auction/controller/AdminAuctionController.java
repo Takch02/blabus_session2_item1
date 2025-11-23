@@ -6,7 +6,7 @@ import com.highlight.highlight_backend.admin.auction.dto.AuctionScheduleRequestD
 import com.highlight.highlight_backend.admin.auction.dto.AuctionStartRequestDto;
 import com.highlight.highlight_backend.admin.auction.dto.AuctionUpdateRequestDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.admin.auction.service.AdminAuctionService;
+import com.highlight.highlight_backend.auction.service.AdminAuctionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

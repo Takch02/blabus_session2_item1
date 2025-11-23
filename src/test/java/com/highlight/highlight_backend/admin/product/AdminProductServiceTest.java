@@ -2,8 +2,8 @@ package com.highlight.highlight_backend.admin.product;
 
 import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
-import com.highlight.highlight_backend.admin.product.domian.Product;
-import com.highlight.highlight_backend.admin.product.service.ProductService;
+import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.product.service.AdminProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Transactional
-class ProductServiceTest {
+class AdminProductServiceTest {
 
     @Autowired
-    private ProductService productService;
+    private AdminProductService adminProductService;
 
     @Test
     @DisplayName("상품을 등록하면 목록 조회 시 조회되어야 한다")
@@ -35,11 +35,11 @@ class ProductServiceTest {
 
         // when (실행): 실제 서비스 메서드 호출
         // 1. 상품 등록
-        ProductResponseDto savedProduct = productService.createProduct(request, adminId);
+        ProductResponseDto savedProduct = adminProductService.createProduct(request, adminId);
 
         PageRequest pageRequest = PageRequest.of(0, 10);
 
-        Page<ProductResponseDto> productList = productService.getProductList(pageRequest, adminId);
+        Page<ProductResponseDto> productList = adminProductService.getProductList(pageRequest, adminId);
         // 상품등록 체크
         assertThat(savedProduct).isNotNull();
         assertThat(savedProduct.getProductName()).isEqualTo("하루노가 지켜보고 있다");

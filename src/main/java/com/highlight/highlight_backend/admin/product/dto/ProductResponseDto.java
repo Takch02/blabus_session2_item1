@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.admin.product.dto;
 
-import com.highlight.highlight_backend.admin.product.domian.Product;
-import com.highlight.highlight_backend.admin.product.domian.ProductImage;
+import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.product.domian.ProductImage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,6 +1,6 @@
-package com.highlight.highlight_backend.admin.product.repository;
+package com.highlight.highlight_backend.product.repository;
 
-import com.highlight.highlight_backend.admin.product.domian.Product;
+import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import org.springframework.data.domain.Page;
@@ -20,7 +20,7 @@ import java.util.Optional;
  *
  */
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface AdminProductRepository extends JpaRepository<Product, Long> {
 
     default Product getOrThrow(Long id) {
         return findById(id)

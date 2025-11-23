@@ -3,9 +3,9 @@ package com.highlight.highlight_backend.admin.product.controller;
 import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
-import com.highlight.highlight_backend.admin.product.service.ProductImageService;
+import com.highlight.highlight_backend.product.service.AdminProductImageService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.admin.product.service.ProductService;
+import com.highlight.highlight_backend.product.service.AdminProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,10 +36,10 @@ import java.util.List;
 @RequestMapping("/api/admin/products")
 @RequiredArgsConstructor
 @Tag(name = "상품 관리 (관리자)", description = "경매 상품 등록, 수정, 조회, 삭제 및 이미지 관리 API")
-public class ProductController {
+public class AdminProductController {
     
-    private final ProductService productService;
-    private final ProductImageService productImageService;
+    private final AdminProductService adminProductService;
+    private final AdminProductImageService adminProductImageService;
     
     /**
      * 상품 등록
@@ -73,7 +73,7 @@ public class ProductController {
         log.info("POST /api/products - 상품 등록 요청: {} (관리자: {})", 
                 request.getProductName(), adminId);
         
-        ProductResponseDto response = productService.createProduct(request, adminId);
+        ProductResponseDto response = adminProductService.createProduct(request, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "상품이 성공적으로 등록되었습니다.")
@@ -95,7 +95,7 @@ public class ProductController {
         Long adminId = (Long) authentication.getPrincipal();
         log.info("GET /api/products - 상품 목록 조회 요청 (관리자: {})", adminId);
         
-        Page<ProductResponseDto> response = productService.getProductList(pageable, adminId);
+        Page<ProductResponseDto> response = adminProductService.getProductList(pageable, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "상품 목록을 성공적으로 조회했습니다.")
@@ -134,7 +134,7 @@ public class ProductController {
         log.info("GET /api/products/{} - 상품 상세 조회 요청 (관리자: {})", 
                 productId, adminId);
         
-        ProductResponseDto response = productService.getProduct(productId, adminId);
+        ProductResponseDto response = adminProductService.getProduct(productId, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "상품 정보를 성공적으로 조회했습니다.")
@@ -161,7 +161,7 @@ public class ProductController {
         log.info("PUT /api/products/{} - 상품 수정 요청 (관리자: {})", 
                 productId, adminId);
         
-        ProductResponseDto response = productService.updateProduct(productId, request, adminId);
+        ProductResponseDto response = adminProductService.updateProduct(productId, request, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "상품이 성공적으로 수정되었습니다.")
@@ -185,7 +185,7 @@ public class ProductController {
         log.info("DELETE /api/products/{} - 상품 삭제 요청 (관리자: {})", 
                 productId, adminId);
         
-        productService.deleteProduct(productId, adminId);
+        adminProductService.deleteProduct(productId, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success("SUCCESS", "상품이 성공적으로 삭제되었습니다.")
@@ -211,7 +211,7 @@ public class ProductController {
         log.info("PATCH /api/admin/products/{}/premium - 상품 프리미엄 설정 (관리자: {}, 프리미엄: {})", 
                 productId, adminId, isPremium);
         
-        ProductResponseDto response = productService.updateProductPremium(productId, isPremium, adminId);
+        ProductResponseDto response = adminProductService.updateProductPremium(productId, isPremium, adminId);
         
         String message = isPremium ? "상품이 프리미엄으로 설정되었습니다." : "상품의 프리미엄 설정이 해제되었습니다.";
         
@@ -256,7 +256,7 @@ public class ProductController {
         log.info("POST /api/admin/products/{}/images - 상품 이미지 업로드 요청: {} 개 파일 (관리자: {})", 
                 productId, files.length, adminId);
         
-        List<String> imageUrls = productImageService.uploadProductImages(productId, files, adminId);
+        List<String> imageUrls = adminProductImageService.uploadProductImages(productId, files, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(imageUrls, "이미지가 성공적으로 업로드되었습니다.")
@@ -282,7 +282,7 @@ public class ProductController {
         log.info("DELETE /api/admin/products/{}/images/{} - 상품 이미지 삭제 요청 (관리자: {})", 
                 productId, imageId, adminId);
         
-        productImageService.deleteProductImage(productId, imageId, adminId);
+        adminProductImageService.deleteProductImage(productId, imageId, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success("SUCCESS", "이미지가 성공적으로 삭제되었습니다.")

@@ -66,16 +66,12 @@ public class AdminAuthService {
         String refreshToken = "";
         if (role == Admin.AdminRole.ADMIN) {
             accessToken = jwtUtil.generateAccessToken(admin.getId(), admin.getEmail(), "ADMIN");
-            log.info("accessToken: {}", accessToken);
             refreshToken = jwtUtil.generateRefreshToken(admin.getId(), admin.getEmail(), "ADMIN");
         }
-        if (role == Admin.AdminRole.SUPER_ADMIN) {
+        else if (role == Admin.AdminRole.SUPER_ADMIN) {
             accessToken = jwtUtil.generateAccessToken(admin.getId(), admin.getEmail(), "SUPER_ADMIN");
-            log.info("accessToken: {}", accessToken);
             refreshToken = jwtUtil.generateRefreshToken(admin.getId(), admin.getEmail(), "SUPER_ADMIN");
         }
-        // 4. JWT 토큰 생성
-
         
         log.info("관리자 로그인 성공: {} (ID: {})", admin.getAdminName(), admin.getAdminId());
         
@@ -104,18 +100,14 @@ public class AdminAuthService {
 
         // 2. 새 관리자 계정 생성
         Admin newAdmin = new Admin();
-        newAdmin.setAdminId(signUpRequestDto.getAdminId());
         newAdmin.setPassword(passwordEncoder.encode(signUpRequestDto.getPassword()));
-        newAdmin.setAdminName(signUpRequestDto.getAdminId()); // 이름은 ID와 동일하게 설정
-        newAdmin.setEmail(signUpRequestDto.getAdminId() + "@admin.com"); // 임시 이메일
-        newAdmin.setRole(Admin.AdminRole.ADMIN); // 기본적으로 일반 관리자
-        newAdmin.setActive(true);
-
+        newAdmin.setFirstAdminDetail(signUpRequestDto, newAdmin);
         Admin savedAdmin = adminRepository.save(newAdmin);
 
         log.info("관리자 간단 회원가입 완료: {} (ID: {})", savedAdmin.getAdminName(), savedAdmin.getId());
     }
-    
+
+
     /**
      * 토큰 유효성 검증
      * 

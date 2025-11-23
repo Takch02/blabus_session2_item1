@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.domain;
+package com.highlight.highlight_backend.bid.domain;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.user.domain.User;

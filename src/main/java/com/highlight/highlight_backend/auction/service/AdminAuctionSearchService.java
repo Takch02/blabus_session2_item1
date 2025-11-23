@@ -1,9 +1,10 @@
-package com.highlight.highlight_backend.admin.auction.service;
+package com.highlight.highlight_backend.auction.service;
 
 import com.highlight.highlight_backend.admin.auction.dto.AuctionResponseDto;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.admin.validator.CommonValidator;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
+import com.highlight.highlight_backend.admin.validator.AdminValidator;
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,9 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminAuctionSearchService {
 
+    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
-
-    private final CommonValidator commonValidator;
+    private final AdminValidator adminValidator;
 
     /**
      * 경매 목록 조회
@@ -31,7 +32,7 @@ public class AdminAuctionSearchService {
     public Page<AuctionResponseDto> getAdminAuctionList(Pageable pageable, Long adminId) {
         log.info("경매 목록 조회 요청 (관리자: {})", adminId);
 
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
 
         return auctionRepository.findByCreatedByOrderByCreatedAtDesc(adminId, pageable)
                 .map(AuctionResponseDto::from);
@@ -47,7 +48,7 @@ public class AdminAuctionSearchService {
     public AuctionResponseDto getAuction(Long auctionId, Long adminId) {
         log.info("경매 상세 조회 요청: {} (관리자: {})", auctionId, adminId);
 
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
 
         Auction auction = auctionRepository.getOrThrow(auctionId);
 
@@ -65,7 +66,7 @@ public class AdminAuctionSearchService {
     public Page<AuctionResponseDto> getActiveAuctions(Pageable pageable, Long adminId) {
         log.info("관리자 전체 경매 목록 조회 요청 (관리자: {})", adminId);
 
-        commonValidator.validateManagePermission(adminId);
+        adminValidator.validateManagePermission(adminId);
 
         return auctionRepository.findByCreatedByOrderByCreatedAtDesc(adminId, pageable)
                 .map(AuctionResponseDto::from);

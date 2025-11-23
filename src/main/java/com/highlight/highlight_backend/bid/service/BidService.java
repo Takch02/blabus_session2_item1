@@ -1,21 +1,22 @@
-package com.highlight.highlight_backend.service;
+package com.highlight.highlight_backend.bid.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.domain.Bid;
+import com.highlight.highlight_backend.bid.domain.Bid;
+import com.highlight.highlight_backend.service.WebSocketService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.dto.BidCreateRequestDto;
-import com.highlight.highlight_backend.dto.BidResponseDto;
-import com.highlight.highlight_backend.dto.WinBidDetailResponseDto;
-import com.highlight.highlight_backend.dto.AuctionMyResultResponseDto;
+import com.highlight.highlight_backend.bid.dto.BidResponseDto;
+import com.highlight.highlight_backend.bid.dto.WinBidDetailResponseDto;
+import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.AuthErrorCode;
 import com.highlight.highlight_backend.exception.CommonErrorCode;
-import com.highlight.highlight_backend.admin.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.repository.BidRepository;
+import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
+import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ import java.util.Optional;
 public class BidService {
     
     private final BidRepository bidRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionQueryRepository auctionQueryRepository;
     private final UserRepository userRepository;
     private final WebSocketService webSocketService;
     
@@ -58,7 +59,7 @@ public class BidService {
             .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
         
         // 2. 경매 조회 (비관적 락으로 동시 입찰 방지)
-        Auction auction = auctionRepository.findByIdWithLock(request.getAuctionId())
+        Auction auction = auctionQueryRepository.findByIdWithLock(request.getAuctionId())
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 3. 입찰 가능 상태 검증
@@ -128,7 +129,7 @@ public class BidService {
     public Page<BidResponseDto> getAuctionBids(Long auctionId, Pageable pageable) {
         log.info("경매 입찰 내역 조회 (익명, 사용자별 최신): 경매ID={}", auctionId);
         
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionQueryRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         Page<Bid> bids = bidRepository.findBidsByAuctionOrderByBidAmountDesc(auction, pageable);
@@ -146,7 +147,7 @@ public class BidService {
     public Page<BidResponseDto> getAllAuctionBids(Long auctionId, Pageable pageable) {
         log.info("경매 전체 입찰 내역 조회 (관리자): 경매ID={}", auctionId);
         
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionQueryRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         Page<Bid> bids = bidRepository.findAllBidsByAuctionOrderByBidAmountDesc(auction, pageable);
@@ -165,7 +166,7 @@ public class BidService {
     public Page<BidResponseDto> getAuctionBidsWithUser(Long auctionId, Long userId, Pageable pageable) {
         log.info("경매 입찰 내역 조회 (본인 강조, 사용자별 최신): 경매ID={}, 사용자ID={}", auctionId, userId);
         
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionQueryRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         Page<Bid> bids = bidRepository.findBidsByAuctionOrderByBidAmountDesc(auction, pageable);
@@ -182,7 +183,7 @@ public class BidService {
     public AuctionStatusResponseDto getAuctionStatus(Long auctionId) {
         log.info("실시간 경매 상태 조회: 경매ID={}", auctionId);
         
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionQueryRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 입찰 통계 조회
@@ -330,7 +331,7 @@ public class BidService {
         auction.setTotalBidders(totalBidders.intValue());
         auction.setTotalBids(totalBids.intValue());
         
-        auctionRepository.save(auction);
+        auctionQueryRepository.save(auction);
     }
     
     /**
@@ -344,7 +345,7 @@ public class BidService {
         log.info("경매 내 결과 조회: 경매ID={}, 사용자ID={}", auctionId, userId);
         
         // 경매 조회
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionQueryRepository.findById(auctionId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 사용자 조회

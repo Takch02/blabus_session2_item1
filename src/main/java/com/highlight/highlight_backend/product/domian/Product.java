@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.admin.product.domian;
+package com.highlight.highlight_backend.product.domian;
 
 import com.highlight.highlight_backend.admin.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.admin.product.dto.ProductUpdateRequestDto;
