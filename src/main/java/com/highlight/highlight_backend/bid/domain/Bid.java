@@ -1,6 +1,7 @@
 package com.highlight.highlight_backend.bid.domain;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -101,7 +102,16 @@ public class Bid {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
-    
+
+    public void setNewBid(Auction auction, User user, BidCreateRequestDto request) {
+        this.setAuction(auction);
+        this.setUser(user);
+        this.setBidAmount(request.getBidAmount());
+        this.setIsAutoBid(request.getIsAutoBid() != null ? request.getIsAutoBid() : false);
+        this.setMaxAutoBidAmount(request.getMaxAutoBidAmount());
+        this.setStatus(Bid.BidStatus.WINNING);
+    }
+
     /**
      * 입찰 상태 열거형
      */

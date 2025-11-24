@@ -2,8 +2,12 @@ package com.highlight.highlight_backend.auction.domain;
 
 import com.highlight.highlight_backend.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionUpdateRequestDto;
+import com.highlight.highlight_backend.exception.AuctionErrorCode;
+import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.product.domian.Product;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -232,6 +236,33 @@ public class Auction {
         this.setMaxBid(request.getMaxBid());               // 최대 인상폭 설정
         this.setShippingFee(request.getShippingFee());       // 배송비 설정
         this.setIsPickupAvailable(request.getIsPickupAvailable()); // 직접 픽업 가능 여부
+    }
+
+    public void validateBid(BigDecimal bidAmount) {
+        // 1. 상태 체크
+        if (this.status != AuctionStatus.IN_PROGRESS) {
+            throw new BusinessException(AuctionErrorCode.CANNOT_START_AUCTION);
+        }
+
+        // 2. 금액 체크 (현재가 + 단위 vs 시작가)
+        BigDecimal minBid = (currentHighestBid == null)
+                ? startPrice
+                : currentHighestBid.add(minimumBid); // minimumBid는 최소 인상폭
+
+        if (bidAmount.compareTo(minBid) < 0) {
+            throw new BusinessException(AuctionErrorCode.INVALID_MINIMUM_BID);
+        }
+    }
+
+    /**
+     *
+     */
+    public void updateHighestBid(BigDecimal bidAmount, boolean isNewBidder) {
+        this.currentHighestBid = bidAmount;
+        this.totalBids++;
+        if (isNewBidder) {
+            this.totalBidders++;
+        }
     }
 
     /**

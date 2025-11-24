@@ -255,4 +255,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     Optional<Bid> findWinningBidByProductIdAndUserId(
             @Param("productId") Long productId, 
             @Param("userId") Long userId);
+
+    Optional<Bid> findTopByAuctionOrderByBidAmountDesc(Auction auction);
+
+    boolean existsByAuctionAndUser(Auction auction, User user);
 }

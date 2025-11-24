@@ -23,7 +23,7 @@ public class BidCreateRequestDto {
      * 경매 ID
      */
     @NotNull(message = "경매 ID는 필수입니다")
-    @Schema(description = "경매 ID", example = "1", required = true)
+    @Schema(description = "경매 ID", example = "1")
     private Long auctionId;
     
     /**
@@ -31,14 +31,15 @@ public class BidCreateRequestDto {
      */
     @NotNull(message = "입찰 금액은 필수입니다")
     @DecimalMin(value = "1000", message = "입찰 금액은 최소 1,000원 이상이어야 합니다")
-    @Schema(description = "입찰 금액", example = "50000", required = true)
+    @Schema(description = "입찰 금액", example = "50000")
     private BigDecimal bidAmount;
     
     /**
      * 자동 입찰 여부
      */
+    @NotNull
     @Schema(description = "자동 입찰 여부", example = "false", defaultValue = "false")
-    private Boolean isAutoBid = false;
+    private Boolean isAutoBid;
     
     /**
      * 자동 입찰 최대 금액 (자동 입찰인 경우 필수)
