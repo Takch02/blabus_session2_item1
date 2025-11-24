@@ -84,9 +84,9 @@ public class AdminAuctionService {
 
         // 7. 경매 엔티티 생성
         Auction savedAuction = createAuction(request, adminId, product, kstStartTime, kstEndTime);
-
         // 8. 상품 상태를 경매대기로 변경
         product.setStatus(Product.ProductStatus.AUCTION_READY);
+        log.info("생성된 경매 id : {}", savedAuction.getId());
 
         // 9. 경매 시작 스케줄링 설정
         auctionSchedulerService.scheduleAuctionStart(savedAuction);
@@ -99,7 +99,8 @@ public class AdminAuctionService {
     private Auction createAuction(AuctionScheduleRequestDto request, Long adminId, Product product, LocalDateTime kstStartTime, LocalDateTime kstEndTime) {
         Auction auction = new Auction();
         auction.addDetail(product, adminId, kstStartTime, kstEndTime, request);
-        return auctionQueryRepository.save(auction);
+        log.info("경매 생성 성공 : {}", product.getProductName());
+        return auctionRepository.save(auction);
     }
 
     /**
