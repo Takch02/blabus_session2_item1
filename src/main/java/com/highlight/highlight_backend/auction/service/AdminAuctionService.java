@@ -16,7 +16,6 @@ import com.highlight.highlight_backend.auction.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.product.repository.ProductRepository;
@@ -40,7 +39,6 @@ import java.time.LocalDateTime;
 @Transactional(readOnly = true)
 public class AdminAuctionService {
 
-    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
     private final AuctionNotificationService auctionNotificationService;
     private final BidNotificationService bidNotificationService;
@@ -89,7 +87,7 @@ public class AdminAuctionService {
         log.info("생성된 경매 id : {}", savedAuction.getId());
 
         // 9. 경매 시작 스케줄링 설정
-        auctionSchedulerService.scheduleAuctionStart(savedAuction);
+        //auctionSchedulerService.scheduleAuctionStart(savedAuction);
 
         log.info("경매 예약 완료: {} (ID: {}), 스케줄링 설정됨", product.getProductName(), savedAuction.getId());
 

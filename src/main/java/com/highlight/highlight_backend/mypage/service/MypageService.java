@@ -1,16 +1,16 @@
 package com.highlight.highlight_backend.mypage.service;
 
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.mypage.dto.MyPagePremiumImageResponseDto;
 import com.highlight.highlight_backend.mypage.dto.MyPageResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.product.repository.ProductImageRepository;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +27,10 @@ public class MypageService {
 
 
     private final UserRepository userRepository;
-    private final ProductQueryRepository productQueryRepository;
+    private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
     private final BidRepository bidRepository;
-    private final AuctionQueryRepository auctionQueryRepository;
+    private final AuctionRepository auctionRepository;
 
 
     /**
@@ -64,7 +64,7 @@ public class MypageService {
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         // 2. 사용자가 낙찰한 경매들 중 프리미엄 상품들 조회
-        List<Long> premiumProductIds = auctionQueryRepository.findPremiumProductIdsByUserId(userId);
+        List<Long> premiumProductIds = auctionRepository.findPremiumProductIdsByUserId(userId);
 
         // 없을 경우 빈 리스트 반환
         if (premiumProductIds.isEmpty()) {
@@ -78,7 +78,7 @@ public class MypageService {
         for (Long productId : premiumProductIds) {
             try {
                 // 상품 정보 조회
-                Product product = productQueryRepository.findById(productId).orElse(null);
+                Product product = productRepository.findById(productId).orElse(null);
 
                 if (product == null) {
                     log.warn("상품을 찾을 수 없습니다: productId={}", productId);

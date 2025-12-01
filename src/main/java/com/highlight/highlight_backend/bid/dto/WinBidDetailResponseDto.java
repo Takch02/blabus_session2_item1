@@ -150,10 +150,10 @@ public class WinBidDetailResponseDto {
         private LocalDateTime endTime;
         
         @Schema(description = "총 입찰 건수", example = "25")
-        private Integer totalBids;
+        private Long totalBids;
         
         @Schema(description = "총 입찰자 수", example = "12")
-        private Integer totalBidders;
+        private Long totalBidders;
         
         @Schema(description = "입찰 단위", example = "1000")
         private BigDecimal bidUnit;
@@ -225,15 +225,9 @@ public class WinBidDetailResponseDto {
     }
     
     /**
-     * 입찰과 계산된 통계로부터 낙찰 상세 정보 DTO를 생성합니다.
-     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
-     * 
-     * @param bid 낙찰 입찰
-     * @param calculatedTotalBids 실제 계산된 입찰 수 (사용자별 최신 기준)
-     * @param calculatedTotalBidders 실제 계산된 입찰자 수
-     * @return 낙찰 상세 정보 DTO
+     * 우승한 입찰의 상세 정보를 보여줍니다.
      */
-    public static WinBidDetailResponseDto fromWithCalculatedStats(Bid bid, Integer calculatedTotalBids, Integer calculatedTotalBidders) {
+    public static WinBidDetailResponseDto fromWithCalculatedStats(Bid bid, Long calculatedTotalBids, Long calculatedTotalBidders) {
         Auction auction = bid.getAuction();
         Product product = auction.getProduct();
         Seller seller = product.getSeller();

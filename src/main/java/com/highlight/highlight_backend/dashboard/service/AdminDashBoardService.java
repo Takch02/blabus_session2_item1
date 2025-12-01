@@ -9,7 +9,6 @@ import com.highlight.highlight_backend.dashboard.dto.AdminDashBoardStatsResponse
 import com.highlight.highlight_backend.exception.AdminErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.admin.repository.AdminRepository;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +27,6 @@ public class AdminDashBoardService {
 
     private final AdminRepository adminRepository;
     private final AuctionRepository auctionRepository;
-    private final AuctionQueryRepository auctionQueryRepository;
 
     public AdminDashBoardStatsResponseDto getDashboardStats(Long adminId) {
         // 1. Admin 엔티티 조회 (기존과 동일)
@@ -36,7 +34,7 @@ public class AdminDashBoardService {
                 .orElseThrow(() -> new BusinessException(AdminErrorCode.ADMIN_NOT_FOUND));
 
         // 2. 해당 Admin이 관리하는 모든 Auction 리스트 조회
-        List<Auction> auctions = auctionQueryRepository.findByAdminAuction(adminId);
+        List<Auction> auctions = auctionRepository.findByAdminAuction(adminId);
 
         Map<Auction.AuctionStatus, Long> statusCounts = auctions.stream()
                 .collect(Collectors.groupingBy(Auction::getStatus, Collectors.counting()));

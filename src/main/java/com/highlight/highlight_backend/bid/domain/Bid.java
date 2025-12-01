@@ -84,18 +84,21 @@ public class Bid {
      */
     @Column(precision = 15, scale = 0)
     private BigDecimal maxAutoBidAmount;
-    
+
+
+
     /**
      * 입찰 취소 시간
      */
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime cancelledAt;
-    
     /**
      * 입찰 취소 사유
      */
     @Column(length = 500)
     private String cancelReason;
-    
+
     /**
      * 입찰 시간
      */
@@ -115,6 +118,7 @@ public class Bid {
     /**
      * 입찰 상태 열거형
      */
+    @Getter
     public enum BidStatus {
         ACTIVE("활성"),           // 유효한 입찰
         OUTBID("경합패배"),       // 더 높은 입찰에 의해 밀림
@@ -127,12 +131,23 @@ public class Bid {
         BidStatus(String description) {
             this.description = description;
         }
-        
-        public String getDescription() {
-            return description;
-        }
+
     }
-    
+
+    /**
+     * 입찰 생성
+     */
+    public static Bid createBid(BidCreateRequestDto request, Auction auction, User user) {
+        return Bid.builder()
+                .auction(auction)
+                .user(user)
+                .bidAmount(request.getBidAmount())
+                .isAutoBid(request.getIsAutoBid()) // null 체크는 DTO나 Builder에서
+                .status(BidStatus.WINNING) // 일단 이놈이 1등임
+                .maxAutoBidAmount(request.getMaxAutoBidAmount())
+                .build();
+    }
+
     /**
      * 입찰 취소
      */
@@ -141,7 +156,14 @@ public class Bid {
         this.cancelledAt = LocalDateTime.now();
         this.cancelReason = reason;
     }
-    
+
+    /**
+     * 입찰 경쟁에서 밀림
+     */
+    public void outBid() {
+        this.status = BidStatus.OUTBID;
+    }
+
     /**
      * 최고가 입찰로 변경
      */
