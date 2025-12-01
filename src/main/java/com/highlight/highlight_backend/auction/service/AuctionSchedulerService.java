@@ -4,9 +4,8 @@ package com.highlight.highlight_backend.auction.service;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
@@ -28,10 +27,8 @@ public class AuctionSchedulerService {
 
     private final TaskScheduler taskScheduler;
 
-    private final AuctionQueryRepository auctionQueryRepository;
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
-    private final ProductQueryRepository productQueryRepository;
 
     private final AuctionNotificationService auctionNotificationService;
 
@@ -62,27 +59,23 @@ public class AuctionSchedulerService {
 
     @Transactional
     public void startAuction(Long auctionId) {
-        Auction auction = auctionQueryRepository.findById(auctionId).orElse(null);
+        Auction auction = auctionRepository.getOrThrow(auctionId);
         if (auction != null && auction.getStatus() == Auction.AuctionStatus.SCHEDULED) {
             // 경매 상태를 IN_PROGRESS로 변경
             auction.setStatus(Auction.AuctionStatus.IN_PROGRESS);
-            auctionQueryRepository.save(auction);
             
             // 상품 상태를 IN_AUCTION으로 변경 (Product를 별도로 조회)
             if (auction.getProduct() != null) {
-                Product product = productQueryRepository.findById(auction.getProduct().getId()).orElse(null);
-                if (product != null) {
-                    product.setStatus(Product.ProductStatus.IN_AUCTION);
-                    productQueryRepository.save(product);
-                    log.info("상품 상태가 IN_AUCTION으로 변경되었습니다. 상품 ID: {}", product.getId());
-                }
+                auction.getProduct().setStatus(Product.ProductStatus.IN_AUCTION);
+                log.info("상품 상태가 IN_AUCTION으로 변경되었습니다. 상품 ID: {}", auction.getProduct().getId());
+                auctionNotificationService.sendAuctionStartedNotification(auction);
             }
-
-            auctionNotificationService.sendAuctionStartedNotification(auction);
-            log.info("스케줄된 경매가 시작되었습니다. 경매 ID: {}, 상품 상태 변경: IN_AUCTION", auctionId);
-            scheduledTasks.remove(auctionId);
         }
+
+        log.info("스케줄된 경매가 시작되었습니다. 경매 ID: {}, 상품 상태 변경: IN_AUCTION", auctionId);
+        scheduledTasks.remove(auctionId);
     }
+
 
     @Scheduled(fixedRate = 60000) // 1분마다 실행
     @Transactional
@@ -102,57 +95,26 @@ public class AuctionSchedulerService {
     @Transactional
     public void checkExpiredAuctions() {
         log.debug("종료된 경매가 있는지 확인합니다...");
-        List<Auction> expiredAuctions = auctionQueryRepository.findInProgressAuctionsReadyToEnd(LocalDateTime.now());
-        
-        if (!expiredAuctions.isEmpty()) {
-            log.info("{}개의 종료된 경매를 발견했습니다. 지금 종료합니다.", expiredAuctions.size());
-            for (Auction auction : expiredAuctions) {
-                try {
-                    // 경매 상태를 COMPLETED로 변경
-                    auction.setStatus(Auction.AuctionStatus.COMPLETED);
-                    auction.setActualEndTime(LocalDateTime.now());
-                    auction.setEndReason("경매 시간 만료로 인한 자동 종료");
-                    auction.setEndedBy(1L); // 시스템 자동 종료
-                    auctionQueryRepository.save(auction);
-                    
-                    // 낙찰자 찾기
-                    var winnerBid = bidRepository.findCurrentHighestBidByAuction(auction).orElse(null);
-                    
-                    // WebSocket으로 경매 종료 알림 전송 (별도 트랜잭션에서 실행)
-                    try {
-                        auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
-                    } catch (Exception e) {
-                        log.error("WebSocket 알림 전송 중 오류 발생. 경매 ID: {}, 오류: {}", auction.getId(), e.getMessage());
-                    }
-                    
-                    log.info("경매가 자동으로 종료되었습니다. 경매 ID: {}", auction.getId());
-                } catch (Exception e) {
-                    log.error("경매 자동 종료 중 오류 발생. 경매 ID: {}, 오류: {}", auction.getId(), e.getMessage(), e);
-                }
-            }
-        }
-    }
-
-    @Scheduled(fixedRate = 60000) // 1분마다 실행
-    @Transactional
-    public void updateProductStatusForCompletedAuctions() {
-        log.debug("완료된 경매의 상품 상태를 업데이트합니다...");
-        List<Auction> completedAuctions = auctionRepository.findByStatus(Auction.AuctionStatus.COMPLETED);
-        
-        for (Auction auction : completedAuctions) {
+        List<Auction> expiredAuctions = auctionRepository.findInProgressAuctionsReadyToEnd(LocalDateTime.now());
+        for (Auction auction : expiredAuctions) {
             try {
-                // 상품 상태를 AUCTION_COMPLETED로 변경
+                // 경매 상태를 COMPLETED로 변경
+                auction.endAuction(1L,"경매 시간 만료로 인한 자동 종료");
+
                 if (auction.getProduct() != null) {
-                    Product product = productQueryRepository.findById(auction.getProduct().getId()).orElse(null);
-                    if (product != null && product.getStatus() != Product.ProductStatus.AUCTION_COMPLETED) {
-                        product.setStatus(Product.ProductStatus.AUCTION_COMPLETED);
-                        productQueryRepository.save(product);
-                        log.info("상품 상태가 AUCTION_COMPLETED로 변경되었습니다. 상품 ID: {}, 경매 ID: {}", product.getId(), auction.getId());
-                    }
+                    auction.getProduct().setStatus(Product.ProductStatus.AUCTION_COMPLETED);
                 }
+                // 낙찰자 찾기
+                var winnerBid = bidRepository.findCurrentHighestBidByAuction(auction).orElse(null);
+                if (winnerBid != null) {
+                    auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
+                }
+
+                log.info("경매가 자동으로 종료되었습니다. 경매 ID: {}", auction.getId());
             } catch (Exception e) {
-                log.error("상품 상태 업데이트 중 오류 발생. 경매 ID: {}, 오류: {}", auction.getId(), e.getMessage(), e);
+                log.error("경매 자동 종료 중 오류 발생. 경매 ID: {}, 오류: {}", auction.getId(), e.getMessage(), e);
             }
         }
+
     }
 }

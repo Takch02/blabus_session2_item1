@@ -22,17 +22,7 @@ import java.util.Optional;
  */
 @Repository
 public interface BidRepository extends JpaRepository<Bid, Long> {
-    
-    /**
-     * 특정 경매의 입찰 내역 조회 (최신순)
-     */
-    @Query("SELECT b FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status != 'CANCELLED' " +
-           "ORDER BY b.createdAt DESC")
-    Page<Bid> findBidsByAuctionOrderByCreatedAtDesc(
-            @Param("auction") Auction auction, 
-            Pageable pageable);
+
     
     /**
      * 특정 경매의 입찰 내역 조회 (입찰가 높은순) - 전체 입찰 내역
@@ -49,6 +39,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     /**
      * 특정 경매의 사용자별 최신 입찰 조회 (입찰가 높은순)
      * 각 사용자의 최신 입찰 1개씩만 반환하여 일반적인 경매 UX를 제공합니다.
+     *
+     * 여러 사용자를 보여주지만 한 사용자의 여러 입찰이 아닌 사용자당 금액이 가장 높은거 1개만 보여줌
      */
     @Query("SELECT b FROM Bid b " +
            "WHERE b.auction = :auction " +
@@ -73,75 +65,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
            "AND b.status IN ('ACTIVE', 'WINNING') " +
            "ORDER BY b.bidAmount DESC, b.createdAt ASC")
     Optional<Bid> findCurrentHighestBidByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 특정 경매의 최고 입찰가 조회
-     */
-    @Query("SELECT MAX(b.bidAmount) FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status IN ('ACTIVE', 'WINNING')")
-    Optional<BigDecimal> findMaxBidAmountByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 특정 경매의 입찰자 수 조회 (전체 입찰 기록 기준) - 관리자용
-     */
-    @Query("SELECT COUNT(DISTINCT b.user) FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status != 'CANCELLED'")
-    Long countAllDistinctBiddersByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 특정 경매의 총 입찰 횟수 조회 (전체 입찰 기록 기준) - 관리자용
-     */
-    @Query("SELECT COUNT(b) FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status != 'CANCELLED'")
-    Long countAllBidsByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 특정 경매의 입찰자 수 조회 (사용자별 최신 입찰 기준)
-     * 거래내역 표시와 일치하는 통계를 제공합니다.
-     */
-    @Query("SELECT COUNT(DISTINCT b.user) FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status != 'CANCELLED' " +
-           "AND b.id IN (" +
-           "    SELECT MAX(b2.id) FROM Bid b2 " +
-           "    WHERE b2.auction = :auction " +
-           "    AND b2.user = b.user " +
-           "    AND b2.status != 'CANCELLED' " +
-           "    GROUP BY b2.user" +
-           ")")
-    Long countDistinctBiddersByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 특정 경매의 사용자별 최신 입찰 수 조회
-     * 거래내역 표시와 일치하는 통계를 제공합니다.
-     */
-    @Query("SELECT COUNT(b) FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.status != 'CANCELLED' " +
-           "AND b.id IN (" +
-           "    SELECT MAX(b2.id) FROM Bid b2 " +
-           "    WHERE b2.auction = :auction " +
-           "    AND b2.user = b.user " +
-           "    AND b2.status != 'CANCELLED' " +
-           "    GROUP BY b2.user" +
-           ")")
-    Long countBidsByAuction(@Param("auction") Auction auction);
-    
-    /**
-     * 사용자의 특정 경매 입찰 내역 조회
-     */
-    @Query("SELECT b FROM Bid b " +
-           "WHERE b.user = :user " +
-           "AND b.auction = :auction " +
-           "AND b.status != 'CANCELLED' " +
-           "ORDER BY b.createdAt DESC")
-    List<Bid> findBidsByUserAndAuctionOrderByCreatedAtDesc(
-            @Param("user") User user, 
-            @Param("auction") Auction auction);
-    
+
+
     /**
      * 사용자의 전체 입찰 내역 조회
      */
@@ -163,40 +88,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     Page<Bid> findWonBidsByUser(
             @Param("user") User user, 
             Pageable pageable);
-    
-    /**
-     * 특정 사용자가 해당 경매에 입찰했는지 확인
-     */
-    @Query("SELECT COUNT(b) > 0 FROM Bid b " +
-           "WHERE b.user = :user " +
-           "AND b.auction = :auction " +
-           "AND b.status != 'CANCELLED'")
-    boolean existsBidByUserAndAuction(@Param("user") User user, @Param("auction") Auction auction);
-    
-    /**
-     * 동일한 금액으로 입찰된 내역 조회 (선도착 시간 우선 처리용)
-     */
-    @Query("SELECT b FROM Bid b " +
-           "WHERE b.auction = :auction " +
-           "AND b.bidAmount = :bidAmount " +
-           "AND b.status != 'CANCELLED' " +
-           "ORDER BY b.createdAt ASC")
-    Optional<Bid> findBidByAuctionAndBidAmount(@Param("auction") Auction auction, @Param("bidAmount") java.math.BigDecimal bidAmount);
-    
-    /**
-     * 특정 사용자의 특정 경매에서 연속 패배 횟수 조회
-     * (마지막 승리 이후 또는 첫 입찰부터 현재까지의 OUTBID 횟수)
-     */
-    @Query("SELECT COUNT(b) FROM Bid b " +
-           "WHERE b.user = :user " +
-           "AND b.auction = :auction " +
-           "AND b.status = 'OUTBID' " +
-           "AND b.createdAt > COALESCE(" +
-           "    (SELECT MAX(wb.createdAt) FROM Bid wb " +
-           "     WHERE wb.user = :user AND wb.auction = :auction AND wb.status IN ('WINNING', 'WON')), " +
-           "    '1970-01-01 00:00:00'" +
-           ")")
-    Long countConsecutiveLossesByUserAndAuction(@Param("user") User user, @Param("auction") Auction auction);
+
     
     /**
      * 특정 사용자의 특정 경매에서 최고 입찰가 조회
@@ -258,5 +150,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     Optional<Bid> findTopByAuctionOrderByBidAmountDesc(Auction auction);
 
+    /**
+     * 입찰을 조회하여 해당 사용자가 입찰에 참여했는데 여부를 반환
+     */
     boolean existsByAuctionAndUser(Auction auction, User user);
 }

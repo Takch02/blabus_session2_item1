@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -70,5 +72,14 @@ public class AuctionCreateService {
         requestDto.setDescription("상태 매우 좋은 테스트 상품입니다. 네고 사절.");
 
         return requestDto;
+    }
+
+    @Test
+    void searchAuction() {
+        Page<AuctionResponseDto> pages = AdminAuctionSearchService.getAdminAuctionList(Pageable.ofSize(3), 1L);
+
+        for (AuctionResponseDto auctionResponseDto : pages.getContent()) {
+            System.out.println(auctionResponseDto);
+        }
     }
 }

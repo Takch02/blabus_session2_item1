@@ -2,7 +2,6 @@ package com.highlight.highlight_backend.product.service;
 
 import com.highlight.highlight_backend.admin.service.AdminAuthService;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.product.dto.ProductUpdateRequestDto;
@@ -30,8 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminProductService {
-    
-    private final ProductQueryRepository productQueryRepository;
+
     private final ProductRepository productRepository;
 
     private final AdminAuthService adminService;
@@ -56,7 +54,7 @@ public class AdminProductService {
         Product product = new Product().setFirstProductDetail(request, adminId);
 
         // 3. 상품 저장
-        Product savedProduct = productQueryRepository.save(product);
+        Product savedProduct = productRepository.save(product);
         
         // 4. 상품 이미지 처리
         if (request.getImages() != null && !request.getImages().isEmpty()) {
@@ -86,7 +84,7 @@ public class AdminProductService {
         adminService.validateManagePermission(adminId);
         
         // 2. 상품 조회
-        Product product = productQueryRepository.findByIdWithImages(productId)
+        Product product = productRepository.findByIdWithImages(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 3. 상품 이미지 업데이트
@@ -128,7 +126,7 @@ public class AdminProductService {
         
         adminService.validateManagePermission(adminId);
         
-        Product product = productQueryRepository.findByIdWithImages(productId)
+        Product product = productRepository.findByIdWithImages(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         return ProductResponseDto.from(product);
@@ -146,15 +144,15 @@ public class AdminProductService {
         
         adminService.validateManagePermission(adminId);
         
-        Product product = productQueryRepository.findById(productId)
+        Product product = productRepository.findById(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         // 경매 중인 상품은 삭제 불가
         if (product.getStatus() == Product.ProductStatus.IN_AUCTION) {
             throw new BusinessException(ProductErrorCode.CANNOT_DELETE_AUCTION_PRODUCT);
         }
-        
-        productQueryRepository.delete(product);
+
+        productRepository.delete(product);
         
         log.info("상품 삭제 완료: {} (ID: {})", product.getProductName(), product.getId());
     }
@@ -176,7 +174,7 @@ public class AdminProductService {
         adminService.validateManagePermission(adminId);
         
         // 상품 조회
-        Product product = productQueryRepository.findById(productId)
+        Product product = productRepository.findById(productId)
             .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         
         // 프리미엄 설정 변경

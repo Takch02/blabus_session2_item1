@@ -1,12 +1,13 @@
 package com.highlight.highlight_backend.product.wishlist.service;
 
+import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import com.highlight.highlight_backend.product.wishlist.domian.ProductWishlist;
 import com.highlight.highlight_backend.product.wishlist.dto.ProductWishlistResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.WishlistErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.product.wishlist.repository.ProductWishlistRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ import java.util.Optional;
 public class ProductWishlistService {
     
     private final ProductWishlistRepository wishlistRepository;
-    private final ProductQueryRepository productQueryRepository;
+    private final ProductRepository productRepository;
     private final UserRepository userRepository;
     
     /**
@@ -203,7 +204,7 @@ public class ProductWishlistService {
         validateUser(userId);
         
         // 상품 존재 확인
-        if (!productQueryRepository.existsById(productId)) {
+        if (!productRepository.existsById(productId)) {
             throw new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
         }
     }

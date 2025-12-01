@@ -119,7 +119,7 @@ public class ProductCreateRequestDto {
     /**
      * 임시저장 여부 (true: 임시저장, false: 활성 상태로 등록)
      */
-    private boolean isDraft = false;
+    private boolean isDraft;
 
 
     /**
@@ -152,11 +152,11 @@ public class ProductCreateRequestDto {
         /**
          * 대표 이미지 여부
          */
-        private boolean isPrimary = false;
+        private boolean isPrimary;
         
         /**
          * 정렬 순서
          */
-        private Integer sortOrder = 0;
+        private Integer sortOrder;
     }
 }

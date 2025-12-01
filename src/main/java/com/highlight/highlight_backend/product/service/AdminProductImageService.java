@@ -6,9 +6,9 @@ import com.highlight.highlight_backend.product.domian.ProductImage;
 import com.highlight.highlight_backend.product.dto.ProductCreateRequestDto;
 import com.highlight.highlight_backend.product.dto.ProductUpdateRequestDto;
 import com.highlight.highlight_backend.product.repository.ProductImageRepository;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,7 +32,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminProductImageService {
 
-    private final ProductQueryRepository productQueryRepository;
+    private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
     private final AdminAuthService adminService;
 
@@ -130,7 +130,7 @@ public class AdminProductImageService {
         adminService.validateManagePermission(adminId);
 
         // 상품 존재 확인
-        Product product = productQueryRepository.findById(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 파일 검증
@@ -166,7 +166,7 @@ public class AdminProductImageService {
             }
         }
 
-        productQueryRepository.save(product);
+        productRepository.save(product);
 
         log.info("상품 이미지 업로드 완료: {} 개 파일", imageUrls.size());
         return imageUrls;
@@ -187,7 +187,7 @@ public class AdminProductImageService {
         adminService.validateManagePermission(adminId);
 
         // 상품 존재 확인
-        Product product = productQueryRepository.findById(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 이미지 존재 확인

@@ -3,6 +3,7 @@ package com.highlight.highlight_backend.bid.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 @Getter
 @NoArgsConstructor
 @Schema(description = "입찰 참여 요청 DTO")
+@AllArgsConstructor
 public class BidCreateRequestDto {
     
     /**

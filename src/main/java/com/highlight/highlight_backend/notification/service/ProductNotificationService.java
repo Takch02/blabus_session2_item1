@@ -8,7 +8,7 @@ import com.highlight.highlight_backend.exception.CommonErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import com.highlight.highlight_backend.notification.repository.ProductNotificationRepository;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
+import com.highlight.highlight_backend.product.repository.ProductRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ import java.util.Optional;
 public class ProductNotificationService {
     
     private final ProductNotificationRepository notificationRepository;
-    private final ProductQueryRepository productQueryRepository;
+    private final ProductRepository productRepository;
     private final UserRepository userRepository;
     
     /**
@@ -229,7 +229,7 @@ public class ProductNotificationService {
         validateUser(userId);
         
         // 상품 존재 확인
-        if (!productQueryRepository.existsById(productId)) {
+        if (!productRepository.existsById(productId)) {
             throw new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
         }
     }

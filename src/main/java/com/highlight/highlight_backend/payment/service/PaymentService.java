@@ -1,6 +1,7 @@
 package com.highlight.highlight_backend.payment.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.auction.service.AuctionNotificationService;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.user.domain.User;
@@ -12,7 +13,6 @@ import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.PaymentErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +35,8 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
-    
-    private final AuctionQueryRepository auctionQueryRepository;
+
+    private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
     private final AuctionNotificationService auctionNotificationService;
@@ -55,7 +55,7 @@ public class PaymentService {
             .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
         
         // 2. 경매 조회
-        Auction auction = auctionQueryRepository.findById(auctionId)
+        Auction auction = auctionRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 3. 경매 종료 여부 확인
@@ -114,7 +114,7 @@ public class PaymentService {
             .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
         
         // 2. 경매 조회
-        Auction auction = auctionQueryRepository.findById(auctionId)
+        Auction auction = auctionRepository.findById(auctionId)
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 3. 경매 종료 여부 확인
@@ -231,7 +231,7 @@ public class PaymentService {
             .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
         
         // 2. 경매 조회
-        Auction auction = auctionQueryRepository.findById(request.getAuctionId())
+        Auction auction = auctionRepository.findById(request.getAuctionId())
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         
         // 3. 경매 상태 확인 (진행 중이어야 함)
@@ -260,7 +260,7 @@ public class PaymentService {
         auction.setActualEndTime(LocalDateTime.now());
         auction.setEndReason("즉시 구매로 인한 경매 종료");
         auction.setEndedBy(userId);
-        auctionQueryRepository.save(auction);
+        auctionRepository.save(auction);
         
         log.info("즉시 구매 경매 종료 완료: 경매ID={}, 사용자ID={}, 즉시구매가={}, 참여횟수={}", 
                 request.getAuctionId(), userId, auction.getBuyItNowPrice(), user.getParticipationCount());

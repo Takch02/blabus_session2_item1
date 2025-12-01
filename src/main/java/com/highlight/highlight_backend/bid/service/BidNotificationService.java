@@ -2,6 +2,7 @@ package com.highlight.highlight_backend.bid.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.dto.AuctionStatusWebSocketDto;
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.dto.BidWebSocketDto;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
@@ -20,6 +21,7 @@ public class BidNotificationService {
 
     private final BidRepository bidRepository;
     private final GlobalSocketService globalSocketService;
+    private final AuctionRepository auctionRepository;
 
     /**
      * 새로운 입찰이 생기면 webSocket을 통해 브로드캐스트로 보냄
@@ -27,11 +29,11 @@ public class BidNotificationService {
     public void sendNewBidNotification(Bid bid) {
 
         Long auctionId = bid.getAuction().getId();
-        // log.info("WebSocket - 새 입찰 알림 전송: 경매={}, 입찰자={}, 금액={}",
-        //         auctionId, bid.getUser().getNickname(), bid.getBidAmount());
+        log.info("WebSocket - 새 입찰 알림 전송: 경매={}, 입찰자={}, 금액={}",
+                 auctionId, bid.getUser().getNickname(), bid.getBidAmount());
 
         // 입찰 통계 조회
-        Long totalBidders = bidRepository.countDistinctBiddersByAuction(bid.getAuction());
+        Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);
         Long totalBids = bidRepository.countBidsByAuction(bid.getAuction());
 
         // WebSocket 메시지 데이터 생성
@@ -58,7 +60,7 @@ public class BidNotificationService {
         //         auctionId, auction.getStatus());
 
         // 입찰 통계 조회
-        Long totalBidders = bidRepository.countDistinctBiddersByAuction(auction);
+        Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);
         Long totalBids = bidRepository.countBidsByAuction(auction);
 
         // 현재 최고 입찰자 조회

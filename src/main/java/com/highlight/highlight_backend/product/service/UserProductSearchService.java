@@ -2,13 +2,11 @@ package com.highlight.highlight_backend.product.service;
 
 import com.highlight.highlight_backend.product.dto.ProductResponseDto;
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.ProductErrorCode;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.product.repository.ProductQueryRepository;
 import com.highlight.highlight_backend.product.repository.ProductRepository;
 import com.highlight.highlight_backend.auction.spec.AuctionSpecs;
 import com.highlight.highlight_backend.product.dto.UserAuctionDetailResponseDto;
@@ -24,6 +22,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,10 +31,8 @@ import java.util.List;
 public class UserProductSearchService {
 
     private final BidRepository bidRepository;
-    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
     private final ProductRepository productRepository;
-    private final ProductQueryRepository productQueryRepository;
 
     /**
      * 필터링, 정렬할 값을 가져오고 정렬한다.
@@ -103,12 +100,12 @@ public class UserProductSearchService {
      * 경매 ID를 통해 상품의 상세 정보를 가져옴
      */
     public UserAuctionDetailResponseDto getProductsDetail(Long auctionId) {
-        Auction auction = auctionQueryRepository.findOne(auctionId);
-        BigDecimal currentPrice = auction.getCurrentHighestBid();
+        Optional<Auction> auction = auctionRepository.findById(auctionId);
+        BigDecimal currentPrice = auction.get().getCurrentHighestBid();
         // 3. 적립될 포인트를 계산합니다. (기본값은 0으로 설정)
         BigDecimal pointReward = BigDecimal.ZERO;
 
-        UserAuctionDetailResponseDto userAuctionDetailResponseDto = UserAuctionDetailResponseDto.from(auction);
+        UserAuctionDetailResponseDto userAuctionDetailResponseDto = UserAuctionDetailResponseDto.from(auction.get());
 
         // 현재 입찰가가 존재할 경우에만 계산을 수행합니다.
         if (currentPrice != null) {
@@ -137,7 +134,7 @@ public class UserProductSearchService {
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 2. 추천 로직: 동일 카테고리 또는 동일 브랜드 상품 조회
-        List<Product> recommendedProducts = productQueryRepository.findRecommendedProducts(
+        List<Product> recommendedProducts = productRepository.findRecommendedProducts(
                 productId,
                 baseProduct.getCategory(),
                 baseProduct.getBrand(),

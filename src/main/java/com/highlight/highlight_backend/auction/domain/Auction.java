@@ -22,9 +22,6 @@ import java.time.LocalDateTime;
  * 경매 엔티티
  * 
  * nafal 경매 시스템의 경매 정보를 저장하는 엔티티입니다.
- * 
- * @author 전우선
- * @since 2025.08.13
  */
 @Entity
 @Table(name = "auction")
@@ -126,13 +123,13 @@ public class Auction {
      * 총 입찰 참여자 수
      */
     @Column(nullable = false)
-    private Integer totalBidders = 0;
+    private Long totalBidders = 0L;
     
     /**
      * 총 입찰 횟수
      */
     @Column(nullable = false)
-    private Integer totalBids = 0;
+    private Long totalBids = 0L;
     
     /**
      * 경매 생성한 관리자 ID
@@ -161,6 +158,9 @@ public class Auction {
      */
     @Column(columnDefinition = "TEXT")
     private String description;
+
+
+    private String currentWinnerName;
     
     /**
      * 생성 시간
@@ -255,10 +255,12 @@ public class Auction {
     }
 
     /**
-     *
+     * Bid 생성 시 실행
+     * 최고가로 입찰한 유저의 닉네임, 금액, TotalBids, TotalBidders 갱신
      */
-    public void updateHighestBid(BigDecimal bidAmount, boolean isNewBidder) {
+    public void updateHighestBid(String currentWinnerName, BigDecimal bidAmount, boolean isNewBidder) {
         this.currentHighestBid = bidAmount;
+        this.currentWinnerName = currentWinnerName;  // 현재 입찰 1위 닉네임 넣기
         this.totalBids++;
         if (isNewBidder) {
             this.totalBidders++;
@@ -268,6 +270,7 @@ public class Auction {
     /**
      * 경매 상태 열거형
      */
+    @Getter
     public enum AuctionStatus {
         SCHEDULED("예약됨"),          // 경매 예약 상태
         READY("시작대기"),            // 경매 시작 준비 완료
@@ -281,10 +284,7 @@ public class Auction {
         AuctionStatus(String description) {
             this.description = description;
         }
-        
-        public String getDescription() {
-            return description;
-        }
+
     }
     
     /**

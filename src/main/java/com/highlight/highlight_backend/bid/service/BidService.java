@@ -14,7 +14,6 @@ import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.exception.AuthErrorCode;
-import com.highlight.highlight_backend.auction.repository.AuctionQueryRepository;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,6 @@ import java.util.Optional;
 public class BidService {
     
     private final BidRepository bidRepository;
-    private final AuctionQueryRepository auctionQueryRepository;
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
     private final BidNotificationService bidNotificationService;
@@ -57,7 +55,7 @@ public class BidService {
         User user = findUserOrThrow(userId);
 
         // 2. 경매 조회 (PESSIMISTIC_WRITE 락 사용 (동시성 제어))
-        Auction auction = auctionQueryRepository.findByIdWithLock(request.getAuctionId())
+        Auction auction = auctionRepository.findByIdWithLock(request.getAuctionId())
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
 
         // 경매, 입찰이 가능한 상태인지 검증
@@ -72,24 +70,18 @@ public class BidService {
         boolean isNewBidder = !bidRepository.existsByAuctionAndUser(auction, user);
         
         // 5. 입찰 엔티티 생성
-        Bid newBid = Bid.builder()
-                .auction(auction)
-                .user(user)
-                .bidAmount(request.getBidAmount())
-                .isAutoBid(request.getIsAutoBid()) // null 체크는 DTO나 Builder에서
-                .status(Bid.BidStatus.WINNING) // 일단 이놈이 1등임
-                .maxAutoBidAmount(request.getMaxAutoBidAmount())
-                .build();
+
+        Bid newBid = Bid.createBid(request, auction, user);
         // 새 입찰 저장
         Bid savedBid = bidRepository.save(newBid);
 
         // 6. 기존 최고 입찰을 OUTBID로 변경 및 개인 알림
         if (previousTopBid != null) {
-            previousTopBid.setStatus(Bid.BidStatus.OUTBID);
+            previousTopBid.outBid();
         }
 
         // 경매 최고가 갱신 및 입찰 참여자 수 갱신
-        auction.updateHighestBid(request.getBidAmount(), isNewBidder);
+        auction.updateHighestBid(user.getNickname(), request.getBidAmount(), isNewBidder);
         
         // 8. 사용자가 해당 경매에 처음 입찰하는 경우 참여 횟수 증가
         if (isNewBidder) {
@@ -97,12 +89,14 @@ public class BidService {
         }
         
         // 9. WebSocket으로 실시간 알림 전송
+        // 이녀석 eventPublisher 이용해서 리팩토링 해볼 것
         notifyBidResult(newBid, previousTopBid);
 
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
         
         return BidResponseDto.fromMyBid(savedBid);
     }
+
 
     private void notifyBidResult(Bid newBid, Bid previousTopBid) {
         // 1. 전체 방송 (새 입찰 발생)
@@ -179,15 +173,11 @@ public class BidService {
         Auction auction = findAuctionOrThrow(auctionId);
 
         // 입찰 통계 조회
-        Long totalBidders = bidRepository.countDistinctBiddersByAuction(auction);
-        Long totalBids = bidRepository.countBidsByAuction(auction);
-        
+        Long totalBidders = auction.getTotalBidders();
+        Long totalBids = auction.getTotalBids();
+
         // 현재 최고 입찰자 조회
-        String winnerNickname = null;
-        Optional<Bid> currentWinner = bidRepository.findCurrentHighestBidByAuction(auction);
-        if (currentWinner.isPresent()) {
-            winnerNickname = currentWinner.get().getUser().getNickname();
-        }
+        String winnerNickname = auction.getCurrentWinnerName();
         
         return AuctionStatusResponseDto.from(auction, totalBidders, totalBids, winnerNickname);
     }
@@ -252,10 +242,10 @@ public class BidService {
 
         // 4. 상세 정보 반환 (사용자별 최신 입찰 기준 통계 적용)
         Auction auction = bid.getAuction();
-        Integer calculatedTotalBids = bidRepository.countBidsByAuction(auction).intValue();
-        Integer calculatedTotalBidders = bidRepository.countDistinctBiddersByAuction(auction).intValue();
+        Long totalBidders = auction.getTotalBidders();
+        Long totalBids = auction.getTotalBids();
 
-        return WinBidDetailResponseDto.fromWithCalculatedStats(bid, calculatedTotalBids, calculatedTotalBidders);
+        return WinBidDetailResponseDto.fromWithCalculatedStats(bid, totalBids, totalBidders);
     }
 
 
