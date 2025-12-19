@@ -13,7 +13,6 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
-import com.highlight.highlight_backend.exception.AuthErrorCode;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -81,7 +80,7 @@ public class BidService {
         }
 
         // 경매 최고가 갱신 및 입찰 참여자 수 갱신
-        auction.updateHighestBid(user.getNickname(), request.getBidAmount(), isNewBidder);
+        auction.updateHighestBid(user, request.getBidAmount(), isNewBidder);
         
         // 8. 사용자가 해당 경매에 처음 입찰하는 경우 참여 횟수 증가
         if (isNewBidder) {
@@ -230,15 +229,8 @@ public class BidService {
         Bid bid = bidRepository.findById(bidId)
             .orElseThrow(() -> new BusinessException(BidErrorCode.BID_NOT_FOUND));
 
-        // 2. 낙찰된 입찰인지 확인
-        if (bid.getStatus() != Bid.BidStatus.WON) {
-            throw new BusinessException(BidErrorCode.BID_NOT_FOUND);
-        }
-
-        // 3. 본인의 입찰인지 확인
-        if (!bid.getUser().getId().equals(userId)) {
-            throw new BusinessException(AuthErrorCode.ACCESS_DENIED);
-        }
+        // 2. 입찰 검증
+        bid.validateWinBid(userId, bid);
 
         // 4. 상세 정보 반환 (사용자별 최신 입찰 기준 통계 적용)
         Auction auction = bid.getAuction();
@@ -247,6 +239,8 @@ public class BidService {
 
         return WinBidDetailResponseDto.fromWithCalculatedStats(bid, totalBids, totalBidders);
     }
+
+
 
 
     /**
@@ -262,11 +256,8 @@ public class BidService {
         // 경매 조회
         Auction auction = findAuctionOrThrow(auctionId);
 
-        // 사용자 조회
-        User user = findUserOrThrow(userId);
-
         // 사용자의 해당 경매 입찰 내역 조회
-        Optional<Bid> userBidOpt = bidRepository.findTopBidByAuctionAndUserOrderByBidAmountDesc(auction, user);
+        Optional<Bid> userBidOpt = bidRepository.findTopBidByAuction_IdAndUser_IdOrderByBidAmountDesc(auctionId, userId);
 
         // 미참여한 경우
         if (userBidOpt.isEmpty()) {
@@ -286,23 +277,13 @@ public class BidService {
             throw new BusinessException(BidErrorCode.AUCTION_NOT_ENDED);
         }
 
-        // 낙찰자 조회
-        Optional<Bid> winnerBidOpt = bidRepository.findCurrentHighestBidByAuction(auction);
-
-        if (winnerBidOpt.isEmpty()) {
-            // 입찰 없이 종료된 경우 (이론적으로 불가능하지만 안전장치)
-            return AuctionMyResultResponseDto.createNoParticipationResult(auction);
-        }
-
-        Bid winnerBid = winnerBidOpt.get();
-
         // 낙찰 여부 확인
-        if (winnerBid.getUser().getId().equals(userId)) {
+        if (auction.getWinnerId().equals(userId)) {
             // 낙찰
-            return AuctionMyResultResponseDto.createWonResult(auction, winnerBid);
+            return AuctionMyResultResponseDto.createWonResult(auction, userBid);
         } else {
             // 유찰
-            return AuctionMyResultResponseDto.createLostResult(auction, userBid, winnerBid.getBidAmount());
+            return AuctionMyResultResponseDto.createLostResult(auction, userBid, auction.getCurrentHighestBid());
         }
     }
 

@@ -63,8 +63,20 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     @Query("SELECT b FROM Bid b " +
            "WHERE b.auction = :auction " +
            "AND b.status IN ('ACTIVE', 'WINNING') " +
-           "ORDER BY b.bidAmount DESC, b.createdAt ASC")
+           "ORDER BY b.bidAmount DESC, b.createdAt ASC " +
+            "LIMIT 1")
     Optional<Bid> findCurrentHighestBidByAuction(@Param("auction") Auction auction);
+
+
+    /**
+     * Auction 의 입찰 중 가장 금액이 높은 입찰을 가져옴 (FETCH JOIN 으로 USER도 같이 조회)
+     */
+    @Query ("SELECT b FROM Bid b " +
+            "JOIN FETCH b.user " +
+            "WHERE b.auction = : auction " +
+            "ORDER BY b.bidAmount DESC " +
+            "LIMIT 1")
+    Optional<Bid> findWinnerBidWithUser(@Param("auction") Auction auction);
 
 
     /**
@@ -91,14 +103,10 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     
     /**
-     * 특정 사용자의 특정 경매에서 최고 입찰가 조회
+     * Auction Id, UserId를 이용해 특정 사용자의 특정 경매에서 최고 입찰가 조회
      */
-    @Query("SELECT b FROM Bid b " +
-           "WHERE b.user = :user " +
-           "AND b.auction = :auction " +
-           "AND b.status != 'CANCELLED' " +
-           "ORDER BY b.bidAmount DESC")
-    Optional<Bid> findTopBidByAuctionAndUserOrderByBidAmountDesc(@Param("auction") Auction auction, @Param("user") User user);
+
+    Optional<Bid> findTopBidByAuction_IdAndUser_IdOrderByBidAmountDesc(Long auctionId, Long userId);
     
     /**
      * 사용자별 경매 참여 횟수 기준 랭킹 조회
