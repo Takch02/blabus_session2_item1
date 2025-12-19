@@ -43,3 +43,7 @@ application.yml
 # 보안 관련 데이터 파일
 src/main/resources/data.sql
 src/test/resources/test-data.sql
+src/test/package.json
+src/test/node_modules
+src/main/resources/sql
+**/test/package.json
