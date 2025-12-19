@@ -78,7 +78,7 @@ public class Product {
      * 현재 상품 상태 ex. 최상, 상, 중 (ENUM class 로 만듦)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "`ProductRank`", nullable = false)
+    @Column(name = "ProductRank", nullable = false)
     private ProductRank rank;
     /**
      * 카테고리 (ENUM class 로 만듦)
@@ -120,7 +120,7 @@ public class Product {
     /**
      * 상품 상태 설명
      */
-    @Column(columnDefinition = "TEXT", name = "`condition`")
+    @Column(columnDefinition = "TEXT", name = "product_condition")
     private String condition;
 
     /**

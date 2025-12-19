@@ -33,7 +33,7 @@ public class UserAuctionResponseDto {
     private BigDecimal currentPrice;   // 현재가
     private BigDecimal buyNowPrice;    // 즉시구매가
     private BigDecimal minimumBid;     // 최소 입찰가 (시작가)
-    private Integer bidCount;      // 입찰 수
+    private Long bidCount;      // 입찰 수
     private LocalDateTime endTime; // 종료 시간
     private LocalDateTime startTime;
     private String auctionStatus;  // 현재 경매 상태
@@ -79,7 +79,7 @@ public class UserAuctionResponseDto {
      * @param calculatedBidCount 실제 계산된 입찰 수 (사용자별 최신 기준)
      * @return 변환된 DTO
      */
-    public static UserAuctionResponseDto fromWithCalculatedCount(Auction auction, Integer calculatedBidCount) {
+    public static UserAuctionResponseDto fromWithCalculatedCount(Auction auction, Long calculatedBidCount) {
         Product product = auction.getProduct();
         List<ProductImage> images = product.getImages();
 

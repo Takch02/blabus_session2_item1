@@ -103,12 +103,12 @@ public class AuctionResponseDto {
     /**
      * 총 입찰 참여자 수
      */
-    private Integer totalBidders;
+    private Long totalBidders;
     
     /**
      * 총 입찰 횟수
      */
-    private Integer totalBids;
+    private Long totalBids;
     
     /**
      * 경매 생성한 관리자 ID
@@ -181,75 +181,4 @@ public class AuctionResponseDto {
                 .build();
     }
 
-    /**
-     * 상품 정보 없이 경매 기본 정보만 포함한 DTO 생성
-     */
-    public static AuctionResponseDto fromWithoutProduct(Auction auction) {
-        return new AuctionResponseDto(
-            auction.getId(),
-            null, // 상품 정보 제외
-            auction.getStatus(),
-            auction.getStatus().getDescription(),
-            auction.getScheduledStartTime(),
-            auction.getScheduledEndTime(),
-            auction.getActualStartTime(),
-            auction.getActualEndTime(),
-            auction.getStartPrice(),
-            auction.getCurrentHighestBid(),
-            auction.getBuyItNowPrice(),
-            auction.getMinimumBid(),
-            auction.getMaxBid(),
-            auction.getBidUnit(),
-            auction.getShippingFee(),
-            auction.getIsPickupAvailable(),
-            auction.getTotalBidders(),
-            auction.getTotalBids(),
-            auction.getCreatedBy(),
-            auction.getStartedBy(),
-            auction.getEndedBy(),
-            auction.getEndReason(),
-            auction.getDescription(),
-            auction.getCreatedAt(),
-            auction.getUpdatedAt()
-        );
-    }
-    
-    /**
-     * 경매 엔티티와 계산된 통계로부터 AuctionResponseDto를 생성합니다.
-     * 사용자별 최신 입찰 기준으로 정확한 통계를 제공합니다.
-     * 
-     * @param auction 원본 Auction 엔티티
-     * @param calculatedTotalBidders 실제 계산된 입찰자 수
-     * @param calculatedTotalBids 실제 계산된 입찰 수 (사용자별 최신 기준)
-     * @return 변환된 DTO
-     */
-    public static AuctionResponseDto fromWithCalculatedStats(Auction auction, Integer calculatedTotalBidders, Integer calculatedTotalBids) {
-        return AuctionResponseDto.builder()
-                .auctionId(auction.getId())
-                .product(ProductResponseDto.from(auction.getProduct()))
-                .status(auction.getStatus())
-                .statusDescription(auction.getStatus().getDescription())
-                .scheduledStartTime(auction.getScheduledStartTime())
-                .scheduledEndTime(auction.getScheduledEndTime())
-                .actualStartTime(auction.getActualStartTime())
-                .actualEndTime(auction.getActualEndTime())
-                .startPrice(auction.getStartPrice())
-                .currentHighestBid(auction.getCurrentHighestBid())
-                .buyItNowPrice(auction.getBuyItNowPrice())
-                .minimumBid(auction.getMinimumBid())
-                .maxBid(auction.getMaxBid())
-                .bidUnit(auction.getBidUnit())
-                .shippingFee(auction.getShippingFee())
-                .isPickupAvailable(auction.getIsPickupAvailable())
-                .totalBidders(calculatedTotalBidders) // 계산된 값 사용
-                .totalBids(calculatedTotalBids) // 계산된 값 사용
-                .createdBy(auction.getCreatedBy())
-                .startedBy(auction.getStartedBy())
-                .endedBy(auction.getEndedBy())
-                .endReason(auction.getEndReason())
-                .description(auction.getDescription())
-                .createdAt(auction.getCreatedAt())
-                .updatedAt(auction.getUpdatedAt())
-                .build();
-    }
 }

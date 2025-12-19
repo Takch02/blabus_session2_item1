@@ -5,6 +5,7 @@ import com.highlight.highlight_backend.auction.dto.AuctionUpdateRequestDto;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.product.domian.Product;
+import com.highlight.highlight_backend.user.domain.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -130,29 +131,38 @@ public class Auction {
      */
     @Column(nullable = false)
     private Long totalBids = 0L;
-    
+
+    /**
+     * 현재 우승자 이름
+     */
+    private String currentWinnerName;
+
+    /**
+     * 최종 우승자 userID
+     */
+    private Long winnerId;
     /**
      * 경매 생성한 관리자 ID
      */
     @Column(nullable = false)
     private Long createdBy;
-    
+
     /**
      * 경매 시작한 관리자 ID
      */
     private Long startedBy;
-    
+
     /**
      * 경매 종료한 관리자 ID
      */
     private Long endedBy;
-    
+
     /**
      * 종료 사유 (정상종료, 중단 등)
      */
     @Column(length = 100)
     private String endReason;
-    
+
     /**
      * 경매 설명/메모
      */
@@ -160,8 +170,7 @@ public class Auction {
     private String description;
 
 
-    private String currentWinnerName;
-    
+
     /**
      * 생성 시간
      */
@@ -256,11 +265,13 @@ public class Auction {
 
     /**
      * Bid 생성 시 실행
-     * 최고가로 입찰한 유저의 닉네임, 금액, TotalBids, TotalBidders 갱신
+     * 최고가로 입찰한 유저의 userId, nickname, 금액, TotalBids, TotalBidders 갱신
+     * 이 컬럼들은 전부 반정규화 진행헀음.
      */
-    public void updateHighestBid(String currentWinnerName, BigDecimal bidAmount, boolean isNewBidder) {
+    public void updateHighestBid(User user, BigDecimal bidAmount, boolean isNewBidder) {
         this.currentHighestBid = bidAmount;
-        this.currentWinnerName = currentWinnerName;  // 현재 입찰 1위 닉네임 넣기
+        this.currentWinnerName = user.getNickname();  // 현재 최고가 입찰 닉네임 넣기
+        this.winnerId = user.getId();  // 현재 최고가 입찰한 userId 입력
         this.totalBids++;
         if (isNewBidder) {
             this.totalBidders++;

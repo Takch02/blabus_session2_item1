@@ -2,6 +2,9 @@ package com.highlight.highlight_backend.bid.domain;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
+import com.highlight.highlight_backend.exception.AuthErrorCode;
+import com.highlight.highlight_backend.exception.BidErrorCode;
+import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -113,6 +116,19 @@ public class Bid {
         this.setIsAutoBid(request.getIsAutoBid() != null ? request.getIsAutoBid() : false);
         this.setMaxAutoBidAmount(request.getMaxAutoBidAmount());
         this.setStatus(Bid.BidStatus.WINNING);
+    }
+
+    public void validateWinBid(Long userId, Bid bid) {
+        //  낙찰된 입찰인지 확인
+        if (bid.getStatus() != Bid.BidStatus.WON) {
+            throw new BusinessException(BidErrorCode.BID_NOT_FOUND);
+        }
+
+        //  본인의 입찰인지 확인
+        if (!bid.getUser().getId().equals(userId)) {
+            throw new BusinessException(AuthErrorCode.ACCESS_DENIED);
+        }
+
     }
 
     /**

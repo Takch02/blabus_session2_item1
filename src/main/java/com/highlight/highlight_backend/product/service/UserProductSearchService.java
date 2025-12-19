@@ -74,9 +74,7 @@ public class UserProductSearchService {
 
         // 4. DTO로 변환하여 반환 (사용자별 최신 입찰 기준 통계 적용)
         return auctionPage.map(auction -> {
-            // 각 경매의 실제 입찰 수를 계산 (사용자별 최신 기준)
-            Long bidCount = bidRepository.countBidsByAuction(auction);
-            return UserAuctionResponseDto.fromWithCalculatedCount(auction, bidCount.intValue());
+            return UserAuctionResponseDto.fromWithCalculatedCount(auction, auction.getTotalBids());
         });
     }
 

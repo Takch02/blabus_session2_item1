@@ -34,7 +34,7 @@ public class BidNotificationService {
 
         // 입찰 통계 조회
         Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);
-        Long totalBids = bidRepository.countBidsByAuction(bid.getAuction());
+        Long totalBids = auctionRepository.findAuctionByTotalBids(auctionId);
 
         // WebSocket 메시지 데이터 생성
         BidWebSocketDto bidData = BidWebSocketDto.from(bid, totalBidders, totalBids);
@@ -61,7 +61,7 @@ public class BidNotificationService {
 
         // 입찰 통계 조회
         Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);
-        Long totalBids = bidRepository.countBidsByAuction(auction);
+        Long totalBids = auctionRepository.findAuctionByTotalBids(auctionId);
 
         // 현재 최고 입찰자 조회
         String winnerNickname = null;
