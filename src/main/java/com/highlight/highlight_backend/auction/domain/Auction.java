@@ -169,7 +169,15 @@ public class Auction {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-
+    /**
+     * Product 에 있지만 넣은 이유
+     * 사용자는 Auction을 보게 되므로 탐색도 Auction을 기준으로 하게됨.
+     * 여기서 Category 정렬을 자주 이용할텐데 Auction에 없을 경우 탐색 효율이 최악이 됨.
+     * 용량을 조금 희생하더라도 탐색시간은 5s -> 50ms 로 바꿀 수 있다면 1000배 좋아지므로 선택함.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category") // DB 컬럼명
+    private Product.Category category;
 
     /**
      * 생성 시간
@@ -245,6 +253,7 @@ public class Auction {
         this.setMaxBid(request.getMaxBid());               // 최대 인상폭 설정
         this.setShippingFee(request.getShippingFee());       // 배송비 설정
         this.setIsPickupAvailable(request.getIsPickupAvailable()); // 직접 픽업 가능 여부
+        this.setCategory(product.getCategory());
     }
 
     public void validateBid(BigDecimal bidAmount) {

@@ -33,7 +33,7 @@ public class AuctionCountdownService {
      * 진행 중인 경매의 남은 시간을 주기적으로 전송 (1초마다)
      */
     @Transactional(readOnly = true)
-    @Scheduled(fixedRate = 1000) // 1초마다 실행
+    //@Scheduled(fixedRate = 1000) // 1초마다 실행
     public void sendCountdownUpdates() {
         try {
             // 진행 중인 경매만 조회
@@ -62,7 +62,7 @@ public class AuctionCountdownService {
     /**
      * 경매 종료 임박 알림 (마지막 1분)
      */
-    @Scheduled(fixedRate = 10000) // 10초마다 실행
+    //@Scheduled(fixedRate = 10000) // 10초마다 실행
     public void sendEndingSoonAlerts() {
         try {
             LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
