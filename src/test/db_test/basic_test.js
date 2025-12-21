@@ -6,7 +6,7 @@ export const options = {
     // 가상 사용자(VUser) 10명
     vus: 10,
     // 60초 동안 지속
-    duration: '60s',
+    duration: '30s',
 
     // (선택사항) 기준점 설정: "95%의 요청이 5초 안에 안 끝나면 테스트 실패로 간주해라"
     thresholds: {
@@ -16,7 +16,7 @@ export const options = {
 
 export default function () {
     // page = 0, size = 10
-    const url = 'http://localhost:8085/api/public/products/?isPremium=false&page=0&size=10&sort=%5B%5D';
+    const url = 'http://localhost:8085/api/public/auctions/?status=IN_PROGRESS&page=0&size=10&sort=newest%2CDesc';
 
     const params = {
         headers: {
