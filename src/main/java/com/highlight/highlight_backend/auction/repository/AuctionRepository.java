@@ -21,7 +21,7 @@ import java.util.Optional;
  *
  * JPA 메소드를 이용한 repo 입니다.
  */
-public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpecificationExecutor<Auction> {
+public interface AuctionRepository extends JpaRepository<Auction, Long>, AuctionRepositoryCustom{
 
     /**
      * auctionId로 경매를 가져옴
