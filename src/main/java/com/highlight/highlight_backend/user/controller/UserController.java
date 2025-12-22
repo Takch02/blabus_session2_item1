@@ -4,10 +4,8 @@ import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestCodeDto;
 import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
+import com.highlight.highlight_backend.user.dto.*;
 import com.highlight.highlight_backend.user.service.UserService;
-import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
-import com.highlight.highlight_backend.user.dto.UserLoginResponseDto;
-import com.highlight.highlight_backend.user.dto.UserSignUpRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -94,6 +92,18 @@ public class UserController {
         log.info("POST /api/public/login - User 로그인");
         UserLoginResponseDto response = userService.login(loginRequestDto);
         return ResponseEntity.ok(ResponseDto.success(response, "User 로그인에 성공하였습니다."));
+    }
+
+    /**
+     * 유저 수정
+     */
+    @PostMapping("/update")
+    public ResponseEntity<ResponseDto<UserDetailResponseDto>> updateUser (
+            Authentication authentication, UserUpdateRequestDto request) {
+
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        UserDetailResponseDto response = userService.updateUser(userId, request);
+        return ResponseEntity.ok(ResponseDto.success(response, "User 수정에 성공했습니다."));
     }
 
 
