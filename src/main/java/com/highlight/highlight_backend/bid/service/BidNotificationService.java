@@ -56,8 +56,6 @@ public class BidNotificationService {
      */
     public void sendAuctionStatusUpdate(Auction auction) {
         Long auctionId = auction.getId();
-        // log.info("WebSocket - 경매 상태 업데이트 전송: 경매={}, 상태={}",
-        //         auctionId, auction.getStatus());
 
         // 입찰 통계 조회
         Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);

@@ -3,6 +3,7 @@ package com.highlight.highlight_backend.bid.service;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
+import com.highlight.highlight_backend.bid.event.BidCreateEvent;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
@@ -17,6 +18,7 @@ import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,9 +40,11 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
     private final BidNotificationService bidNotificationService;
+    private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
 
     /**
      * 입찰 참여
+     * 변경 전 lock 순서 : Auction lock -> User lock -> 둘 다 Unlock
      * 
      * @param request 입찰 요청 정보
      * @param userId 입찰하는 사용자 ID
@@ -58,6 +62,7 @@ public class BidService {
             .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
 
         // 경매, 입찰이 가능한 상태인지 검증
+        // 예외 발생 시 종료.
         auction.validateBid(request.getBidAmount());
 
         // 3. 이전 최고 입찰자 찾기 (알림용)
@@ -81,15 +86,13 @@ public class BidService {
 
         // 경매 최고가 갱신 및 입찰 참여자 수 갱신
         auction.updateHighestBid(user, request.getBidAmount(), isNewBidder);
-        
-        // 8. 사용자가 해당 경매에 처음 입찰하는 경우 참여 횟수 증가
-        if (isNewBidder) {
-            user.participateInAuction();
-        }
-        
-        // 9. WebSocket으로 실시간 알림 전송
-        // 이녀석 eventPublisher 이용해서 리팩토링 해볼 것
-        notifyBidResult(newBid, previousTopBid);
+
+        // Listener 에게 던지기 전에 null 체크
+        Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
+
+        // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
+        eventPublisher.publishEvent(new BidCreateEvent(userId, auction.getId(), newBid.getId(), previousBidId,
+                newBid.getBidAmount(), isNewBidder));
 
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
         

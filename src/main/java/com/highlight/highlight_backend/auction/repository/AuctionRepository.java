@@ -102,6 +102,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
     /**
      * 경매 조회 (비관적 락)
      * 동시 입찰 시 데이터 일관성을 위해 락을 사용합니다.
+     * sql : SELECT * FROM auction WHERE id = ? FOR UPDATE; -- UPDATE 가 있으므로 lock이 걸림.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Auction a WHERE a.id = :auctionId")
