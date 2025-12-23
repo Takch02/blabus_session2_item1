@@ -156,10 +156,32 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             @Param("productId") Long productId, 
             @Param("userId") Long userId);
 
+    /**
+     * 현재 최고가 입찰 내역을 확인.
+     */
     Optional<Bid> findTopByAuctionOrderByBidAmountDesc(Auction auction);
 
     /**
-     * 입찰을 조회하여 해당 사용자가 입찰에 참여했는데 여부를 반환
+     * 입찰을 조회하여 해당 사용자가 입찰에 참여 여부를 반환
+     * @return true : 이미 입찰에 참여함. / false : 입찰에 참여 이력 없음.
      */
     boolean existsByAuctionAndUser(Auction auction, User user);
+
+
+    /**
+     * 알림용: Bid + User + Auction 한 번에 조회 (N+1 방지)
+     */
+    @Query("SELECT b FROM Bid b " +
+            "JOIN FETCH b.user " +
+            "JOIN FETCH b.auction " +
+            "WHERE b.id = :id")
+    Optional<Bid> findByIdWithUserAndAuction(@Param("id") Long newBidId);
+
+    /**
+     * 알림용: Bid + User 한 번에 조회 (이전 1등 찾기용)
+     */
+    @Query("SELECT b FROM Bid b " +
+            "JOIN FETCH b.user " +
+            "WHERE b.id = :id")
+    Optional<Bid> findByIdWithUser(@Param("id") Long id);
 }

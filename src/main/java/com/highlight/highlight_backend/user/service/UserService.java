@@ -9,11 +9,9 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.SmsErrorCode;
 import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.common.verification.repository.PhoneVerificationRepository;
+import com.highlight.highlight_backend.user.dto.*;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import com.highlight.highlight_backend.user.domain.User;
-import com.highlight.highlight_backend.user.dto.UserLoginRequestDto;
-import com.highlight.highlight_backend.user.dto.UserLoginResponseDto;
-import com.highlight.highlight_backend.user.dto.UserSignUpRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -111,6 +109,7 @@ public class UserService {
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
         userRepository.delete(user);
     }
 
@@ -138,4 +137,24 @@ public class UserService {
     public void confirmVerification(PhoneVerificationRequestDto requestDto) {
         verificationService.confirmVerificationCode(requestDto.getPhoneNumber(), requestDto.getVerificationCode());
     }
+
+    @Transactional
+    public UserDetailResponseDto updateUser(Long userId, UserUpdateRequestDto request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+
+        // 엔티티 상태 변경
+        user.updateProfile(
+                request.getNickname(),
+                request.getPhoneNumber(),
+                request.getMarketingEnabled(),
+                request.getEventSnsEnabled()
+        );
+
+        // @Transactional + Dirty Checking → save 호출 불필요
+        return UserDetailResponseDto.from(user);
+    }
+
 }

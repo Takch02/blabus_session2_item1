@@ -7,8 +7,6 @@ import lombok.Setter;
 /**
  * 회원가입 시 User의 정보를 받을 DTO
  *
- * @Author 탁찬홍
- * @Since 2025.08.15
  */
 @Getter
 @Setter

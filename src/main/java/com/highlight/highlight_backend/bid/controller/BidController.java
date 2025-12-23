@@ -47,11 +47,9 @@ public class BidController {
     private final BidService bidService;
     
     /**
-     * 입찰 참여
-     * 
-     * @param request 입찰 요청 정보
-     * @param authentication 현재 로그인한 사용자 정보
-     * @return 입찰 결과
+     * 입찰 하기
+     * 현재 금액보다 더 큰 값으로 입찰합니다.
+     *
      */
     @PostMapping("/bids")
     @Operation(

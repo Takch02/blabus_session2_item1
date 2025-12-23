@@ -45,17 +45,11 @@ public class UserAuctionController {
     /**
      * 메인 화면 및 카테고리 화면
      *
-     * @param minPrice -> 최소 가격
-     * @param maxPrice -> 최대 가격
-     * @param brand -> 브랜드 종류
-     * @param category -> 필터링할 카테고리를 가져옵니다.
-     * @param isPremium -> 프리미엄 상품 필터링 (true: 프리미엄만, false: 일반만, null: 전체)
-     * @param status -> 경매 상태 필터링 (IN_PROGRESS: 진행중, SCHEDULED: 예정, ENDING_SOON: 마감임박)
      */
     @GetMapping("/")
     @Operation(
             summary = "경매 목록 조회 및 검색",
-            description = "모든 경매 목록을 필터링과 정렬 조건에 따라 조회합니다. 로그인 없이 접근 가능한 공개 API입니다. 카테고리, 가격 범위, 브랜드, 경매 상태 등으로 필터링할 수 있으며, 다양한 정렬 옵션을 제공합니다."
+            description = "모든 경매 목록을 필터링과 정렬 조건에 따라 조회합니다. 로그인 없이 접근 가능한 공개 API입니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -67,15 +61,15 @@ public class UserAuctionController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     public ResponseEntity<ResponseDto<Slice<UserAuctionResponseDto>>> home (
-            @Parameter(description = "카테고리 필터 (PROPS, FURNITURE, HOME_APPLIANCES, SCULPTURE, FASHION, CERAMICS, PAINTING)", example = "FURNITURE")
+            @Parameter(description = "카테고리 필터 (PROPS, FURNITURE, HOME_APPLIANCES, SCULPTURE, FASHION, CERAMICS, PAINTING)")
             @RequestParam(required = false) String category,
-            @Parameter(description = "최소 가격 (원)", example = "10000")
+            @Parameter(description = "최소 가격 (원)")
             @RequestParam(required = false) Long minPrice,
-            @Parameter(description = "최대 가격 (원)", example = "100000")
+            @Parameter(description = "최대 가격 (원)")
             @RequestParam(required = false) Long maxPrice,
-            @Parameter(description = "브랜드명", example = "삼성")
+            @Parameter(description = "브랜드명")
             @RequestParam(required = false) String brand,
-            @Parameter(description = "프리미엄 상품 필터 (true: 프리미엄만, false: 일반만, null: 전체)", example = "true")
+            @Parameter(description = "프리미엄 상품 필터 (true: 프리미엄만, false: 일반만, null: 전체)")
             @RequestParam(required = false) Boolean isPremium,
             @Parameter(description = "경매 상태 (IN_PROGRESS: 진행중, SCHEDULED: 예정, ENDING_SOON: 마감임박)", example = "IN_PROGRESS")
             @RequestParam(required = false) String status,
@@ -105,7 +99,7 @@ public class UserAuctionController {
 
     @PostMapping("/{auctionId}/buy-it-now")
     @Operation(summary = "즉시구매", 
-               description = "설정된 즉시구매가로 상품을 즉시 구매합니다. 재고 1개 상품만 가능하며, 경매가 즉시 종료됩니다. 결제 정보를 포함해야 합니다.")
+               description = "설정된 즉시구매가로 상품을 즉시 구매합니다. 재고 1개 상품만 가능하다.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "즉시구매 성공"),

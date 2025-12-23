@@ -195,4 +195,19 @@ public class User {
     public Long getRequiredParticipationForNextRank() {
         return Rank.getRequiredParticipationForNextRank(this.participationCount);
     }
+
+    /**
+     * User 수정
+     */
+    public void updateProfile(
+            String nickname,
+            String phoneNumber,
+            Boolean marketingEnabled,
+            Boolean eventSnsEnabled
+    ) {
+        this.nickname = nickname;
+        this.phoneNumber = phoneNumber;
+        this.marketingEnabled = marketingEnabled;
+        this.eventSnsEnabled = eventSnsEnabled;
+    }
 }

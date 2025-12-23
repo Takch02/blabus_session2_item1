@@ -16,7 +16,6 @@ import java.math.BigDecimal;
  * @since 2025.08.15
  */
 @Getter
-@NoArgsConstructor
 @Schema(description = "입찰 참여 요청 DTO")
 @AllArgsConstructor
 public class BidCreateRequestDto {
