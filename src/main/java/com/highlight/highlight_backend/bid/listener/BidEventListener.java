@@ -1,7 +1,7 @@
 package com.highlight.highlight_backend.bid.listener;
 
 import com.highlight.highlight_backend.bid.domain.Bid;
-import com.highlight.highlight_backend.bid.event.BidCreateEvent;
+import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class BidEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW) // 새로운 트랜잭션에서 안전하게 조회
-    public void handleBidNotification(BidCreateEvent event) {
+    public void handleBidNotification(BidNotificationEvent event) {
 
         log.info("🔔 알림 이벤트 수신: AuctionId={}", event.getAuctionId());
 

@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  */
 @Getter
 @AllArgsConstructor
-public class BidCreateEvent {
+public class BidNotificationEvent {
     Long userId;
     Long auctionId;
     Long newBidId;

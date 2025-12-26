@@ -3,7 +3,8 @@ package com.highlight.highlight_backend.bid.service;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
-import com.highlight.highlight_backend.bid.event.BidCreateEvent;
+import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
+import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
@@ -90,9 +91,16 @@ public class BidService {
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
+        // 입찰 메시지를 위한 event
+        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), newBid.getId(), previousBidId,
+                newBid.getBidAmount(), isNewBidder);
+
+        // user.participation_count++ 를 위한 event
+        BidCompleteEvent userEvent = new BidCompleteEvent(userId);
+
         // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
-        eventPublisher.publishEvent(new BidCreateEvent(userId, auction.getId(), newBid.getId(), previousBidId,
-                newBid.getBidAmount(), isNewBidder));
+        eventPublisher.publishEvent(userEvent);
+        eventPublisher.publishEvent(bidEvent);
 
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
         
