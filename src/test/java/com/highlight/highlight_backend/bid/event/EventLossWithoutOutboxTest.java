@@ -4,6 +4,7 @@ import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.service.BidService;
+import com.highlight.highlight_backend.common.outbox.OutboxResiliencyScheduler;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.listener.UserEventListener;
 import com.highlight.highlight_backend.user.repository.UserRepository;
@@ -33,6 +34,9 @@ public class EventLossWithoutOutboxTest {
     @Autowired
     private UserEventListener userEventListener;
 
+    @Autowired
+    private OutboxResiliencyScheduler scheduler;
+
     @MockitoBean
     private UserService userService;
 
@@ -43,13 +47,14 @@ public class EventLossWithoutOutboxTest {
         // 1. [Given] 초기 상태
         Long userId = 1L;
         Long auctionId = 2L;
-        BigDecimal bidAmount = BigDecimal.valueOf(147000); // 새로운 입찰가
+        BigDecimal bidAmount = BigDecimal.valueOf(150000); // 새로운 입찰가
 
         User userBefore = userRepository.findById(userId).orElseThrow();
         Long initialCount = userBefore.getParticipationCount();
 
         // 2. 네트워크 유실, 서버 오류를 user.count++ 로직에서 오류로 가정
-        doThrow(new RuntimeException("🔥 카운트 증가하다가 오류 발생! 🔥"))
+        doThrow(new RuntimeException("🔥 1차 시도: 네트워크 불안정!"))
+                .doNothing() // ★ 두 번째 호출부터는 성공(에러 안 던짐)
                 .when(userService).increaseParticipationCount(any());
 
         // 3. [When] 입찰 시도 (메인 트랜잭션)
@@ -57,12 +62,14 @@ public class EventLossWithoutOutboxTest {
             bidService.createBid(new BidCreateRequestDto(
                     auctionId, bidAmount, false, BigDecimal.valueOf(1000)
             ), userId);
+            // 스케줄러는 5분마다 실행되지만 테스트를 위해 바로 실행됐다 가정.
+            scheduler.resendMissingEvents();
         } catch (Exception e) {
-            // 메인 로직은 성공해야 하므로 에러를 먹어버림 (Async 실패는 메인에 영향 안 줌)
+            System.out.println("비즈니스 로직 오류");
         }
 
         // 4. [Wait] 비동기 리스너가 실행되고 에러가 터질 시간을 줌
-        Thread.sleep(1000);
+        Thread.sleep(5000);
 
         // 5. [Then] 결과 확인
 

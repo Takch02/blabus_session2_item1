@@ -4,6 +4,7 @@ import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.bid.service.BidNotificationService;
+import com.highlight.highlight_backend.common.outbox.OutboxService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class BidEventListener {
 
     private final BidRepository bidRepository;
     private final BidNotificationService bidNotificationService;
+    private final OutboxService outboxService;
 
     /**
      * 입찰 성공 후 실행되는 알림 로직 (비동기)
@@ -55,6 +57,8 @@ public class BidEventListener {
                     bidNotificationService.sendBidOutbidNotification(previousBid, newBid);
                 }
             }
+            log.info("입찰 메시지 전송 시작 : {}", event.getNewBidId());
+            outboxService.markPublished(event.getOutboxId());
 
         } catch (Exception e) {
             // 비동기라 여기서 에러 나도 입찰은 취소 안 됨. 로그만 남김.

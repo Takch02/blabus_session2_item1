@@ -5,6 +5,7 @@ import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
 import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
+import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
@@ -42,6 +43,7 @@ public class BidService {
     private final UserRepository userRepository;
     private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
+    private final OutboxService outboxService;
 
     /**
      * 입찰 참여
@@ -91,12 +93,22 @@ public class BidService {
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
-        // 입찰 메시지를 위한 event
-        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), newBid.getId(), previousBidId,
-                newBid.getBidAmount(), isNewBidder);
+
+        // outbox 에 저장하기
 
         // user.participation_count++ 를 위한 event
         BidCompleteEvent userEvent = new BidCompleteEvent(userId);
+        // outbox에 저장
+        Long logicIOutboxId = outboxService.appendEvent("BIC_USER_UPDATE", userId, userEvent);
+        userEvent.setOutboxId(logicIOutboxId);
+
+        // 입찰 메시지를 위한 event
+        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), newBid.getId(), previousBidId,
+                newBid.getBidAmount(), isNewBidder);
+        // outbox에 저장
+        Long notiOutboxId = outboxService.appendEvent("BIC_NOTI", newBid.getId(), bidEvent);
+        bidEvent.setOutboxId(notiOutboxId);
+
 
         // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
         eventPublisher.publishEvent(userEvent);

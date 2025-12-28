@@ -14,9 +14,7 @@ import java.lang.annotation.*;
  * - 영문 소문자 최소 1개  
  * - 숫자 최소 1개
  * - 특수문자 최소 1개
- * 
- * @author 전우선
- * @since 2025.08.13
+ *
  */
 @Documented
 @Constraint(validatedBy = PasswordValidator.class)
