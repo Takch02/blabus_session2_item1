@@ -19,10 +19,9 @@ public class OutboxService {
 
     /**
      * 1. 이벤트를 Outbox 테이블에 저장 (트랜잭션 안에서 수행 필수)
-     * @return 저장된 Outbox ID (리스너에게 전달해야 함)
      */
     @Transactional
-    public Long appendEvent(String aggregateType, Long aggregateId, Object event) {
+    public void appendEvent(Long outboxId, String aggregateType, Long aggregateId, Object event) {
         String payload;
         try {
             payload = objectMapper.writeValueAsString(event);
@@ -31,14 +30,14 @@ public class OutboxService {
         }
 
         OutboxEvent outboxEvent = OutboxEvent.builder()
+                .id(outboxId)
                 .aggregateType(aggregateType)
                 .aggregateId(aggregateId)
                 .eventType(event.getClass().getName())
                 .payload(payload)
                 .build();
 
-        OutboxEvent saved = outboxRepository.save(outboxEvent);
-        return saved.getId();
+        outboxRepository.save(outboxEvent);
     }
 
     /**

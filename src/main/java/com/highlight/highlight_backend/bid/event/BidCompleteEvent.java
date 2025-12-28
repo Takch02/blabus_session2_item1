@@ -1,17 +1,12 @@
 package com.highlight.highlight_backend.bid.event;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
+@AllArgsConstructor
 public class BidCompleteEvent {
     Long userId;
-
-    @Setter
     Long outboxId;
-
-    public BidCompleteEvent(Long userId) {
-        this.userId = userId;
-    }
 
 }

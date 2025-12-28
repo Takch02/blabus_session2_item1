@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.bid.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
@@ -96,19 +97,20 @@ public class BidService {
 
         // outbox 에 저장하기
 
+        // 1. App에서 ID 생성 (시간순 정렬된 Long 값)
+        long userEventOutboxId = TsidCreator.getTsid().toLong();
+        long bidNotiOutbodId = TsidCreator.getTsid().toLong();
+
         // user.participation_count++ 를 위한 event
-        BidCompleteEvent userEvent = new BidCompleteEvent(userId);
+        BidCompleteEvent userEvent = new BidCompleteEvent(userId, userEventOutboxId);
         // outbox에 저장
-        Long logicIOutboxId = outboxService.appendEvent("BIC_USER_UPDATE", userId, userEvent);
-        userEvent.setOutboxId(logicIOutboxId);
+        outboxService.appendEvent(userEventOutboxId, "BID_USER_UPDATE", userId, userEvent);
 
         // 입찰 메시지를 위한 event
         BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), newBid.getId(), previousBidId,
-                newBid.getBidAmount(), isNewBidder);
+                newBid.getBidAmount(), isNewBidder, bidNotiOutbodId);
         // outbox에 저장
-        Long notiOutboxId = outboxService.appendEvent("BIC_NOTI", newBid.getId(), bidEvent);
-        bidEvent.setOutboxId(notiOutboxId);
-
+        outboxService.appendEvent(bidNotiOutbodId, "BID_NOTI", newBid.getId(), bidEvent);
 
         // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
         eventPublisher.publishEvent(userEvent);

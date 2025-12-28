@@ -17,20 +17,18 @@ import java.util.List;
 public class OutboxResiliencyScheduler {
 
     private final OutboxRepository outboxRepository;
-    private final OutboxService outboxService; // (선택) 필요 시 사용
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
     /**
      * 5분마다 실행 (fixedDelay = 300000ms)
      */
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 300000)
     @Transactional
     public void resendMissingEvents() {
         // 1. "지금으로부터 1분 전"보다 더 옛날에 생성된 것만 조회 (Safety Margin)
         // 방금 트랜잭션 도는 중인 애들을 건드리지 않기 위함
-        LocalDateTime cutOffTime = LocalDateTime.now().minusSeconds(2);
-        
+        LocalDateTime cutOffTime = LocalDateTime.now().minusMinutes(5);
         List<OutboxEvent> missingEvents = outboxRepository.findAllByPublishedFalseAndCreatedAtBefore(cutOffTime);
 
         if (missingEvents.isEmpty()) {

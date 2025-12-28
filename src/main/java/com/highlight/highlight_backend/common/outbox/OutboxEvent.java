@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 public class OutboxEvent {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -42,7 +41,8 @@ public class OutboxEvent {
     private LocalDateTime createdAt;
 
     @Builder
-    public OutboxEvent(String aggregateType, Long aggregateId, String eventType, String payload) {
+    public OutboxEvent(Long id, String aggregateType, Long aggregateId, String eventType, String payload) {
+        this.id = id;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
         this.eventType = eventType;
