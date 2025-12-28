@@ -8,12 +8,10 @@ import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import com.highlight.highlight_backend.bid.service.BidService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.repository.UserRepository;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -25,7 +23,7 @@ import static org.mockito.Mockito.doThrow;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class EventLossTest {
+public class EventSequentialTest {
 
     @Autowired
     private BidService bidService;
