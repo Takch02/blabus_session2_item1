@@ -157,4 +157,12 @@ public class UserService {
         return UserDetailResponseDto.from(user);
     }
 
+    @Transactional
+    public void increaseParticipationCount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+        user.participateInAuction();
+    }
+
+
 }
