@@ -51,7 +51,7 @@ public class EventLossWithoutOutboxTest {
         // 1. [Given] 초기 상태
         Long userId = 1L;
         Long auctionId = 2L;
-        BigDecimal bidAmount = BigDecimal.valueOf(162000); // 새로운 입찰가
+        BigDecimal bidAmount = BigDecimal.valueOf(164000); // 새로운 입찰가
 
         User userBefore = userRepository.findById(userId).orElseThrow();
         Long initialCount = userBefore.getParticipationCount();
