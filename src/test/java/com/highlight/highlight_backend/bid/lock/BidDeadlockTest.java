@@ -40,13 +40,13 @@ public class BidDeadlockTest {
 
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
-
         for (int i = 0; i < numberOfThreads; i++) {
             final int index = i;
+            String safePhoneNumber = "0109999888" + index;
             BigDecimal currentPrice = BigDecimal.valueOf(bidPrice.addAndGet(1100));
             UserUpdateRequestDto dynamicUpdateDto = new UserUpdateRequestDto(
                     "닉네임" + index,          // 닉네임0, 닉네임1... 중복 안 됨
-                    "0100000000" + index,     // 전화번호도 중복 안 됨
+                    safePhoneNumber,     // 전화번호도 중복 안 됨
                     true,
                     true
             );
@@ -57,7 +57,7 @@ public class BidDeadlockTest {
                         bidService.createBid(new BidCreateRequestDto(2L, currentPrice, false,
                                 BigDecimal.valueOf(1100)), 1L);
                     } 
-                    // 홀수 스레드: 유저 정보 수정 (User Lock)
+                    // 홀수 스레드: 유저 정보 수정 (User Lock -> Auction Lock)
                     else {
                         userService.updateUser(1L, dynamicUpdateDto);
                     }

@@ -12,12 +12,14 @@ COPY . .
 RUN gradle clean build -x test --no-daemon
 
 # 2단계: Runtime stage
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
+
+RUN mkdir -p /app/logs
 
 # build/libs 디렉토리에서 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-EXPOSE 8082
+EXPOSE 8085
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

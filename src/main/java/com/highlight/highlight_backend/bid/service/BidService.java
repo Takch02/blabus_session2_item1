@@ -1,9 +1,12 @@
 package com.highlight.highlight_backend.bid.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
-import com.highlight.highlight_backend.bid.event.BidCreateEvent;
+import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
+import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
+import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
@@ -41,6 +44,7 @@ public class BidService {
     private final UserRepository userRepository;
     private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
+    private final OutboxService outboxService;
 
     /**
      * 입찰 참여
@@ -90,13 +94,34 @@ public class BidService {
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
-        // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
-        eventPublisher.publishEvent(new BidCreateEvent(userId, auction.getId(), newBid.getId(), previousBidId,
-                newBid.getBidAmount(), isNewBidder));
+        saveOutBoxAndPublish(userId, auction, savedBid, previousBidId, isNewBidder);
 
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
         
         return BidResponseDto.fromMyBid(savedBid);
+    }
+
+    private void saveOutBoxAndPublish(Long userId, Auction auction, Bid savedBid, Long previousBidId, boolean isNewBidder) {
+        // outbox 에 저장하기
+
+        // 1. App에서 ID 생성 (시간순 정렬된 Long 값)
+        long userEventOutboxId = TsidCreator.getTsid().toLong();
+        long bidNotOutbid = TsidCreator.getTsid().toLong();
+
+        // user.participation_count++ 를 위한 event
+        BidCompleteEvent userEvent = new BidCompleteEvent(userId, userEventOutboxId);
+        // outbox에 저장
+        outboxService.appendEvent(userEventOutboxId, "BID_USER_UPDATE", userId, userEvent);
+
+        // 입찰 메시지를 위한 event
+        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), savedBid.getId(), previousBidId,
+                savedBid.getBidAmount(), isNewBidder, bidNotOutbid);
+        // outbox에 저장
+        outboxService.appendEvent(bidNotOutbid, "BID_NOTI", savedBid.getId(), bidEvent);
+
+        // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
+        eventPublisher.publishEvent(userEvent);
+        eventPublisher.publishEvent(bidEvent);
     }
 
 

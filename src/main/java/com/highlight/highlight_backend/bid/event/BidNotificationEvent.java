@@ -2,6 +2,7 @@ package com.highlight.highlight_backend.bid.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -10,11 +11,12 @@ import java.math.BigDecimal;
  */
 @Getter
 @AllArgsConstructor
-public class BidCreateEvent {
+public class BidNotificationEvent {
     Long userId;
     Long auctionId;
     Long newBidId;
     Long previousBidId;
     BigDecimal bidAmount;
     boolean isNewBidder;
+    Long outboxId;
 }

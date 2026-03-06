@@ -1,5 +1,7 @@
 package com.highlight.highlight_backend.user.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
+import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestCodeDto;
 import com.highlight.highlight_backend.common.verification.dto.PhoneVerificationRequestDto;
@@ -14,6 +16,7 @@ import com.highlight.highlight_backend.user.repository.UserRepository;
 import com.highlight.highlight_backend.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,8 @@ import java.time.LocalDateTime;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final OutboxService outboxService;
+    private final ApplicationEventPublisher eventListener;
     private final PhoneVerificationRepository phoneVerificationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -152,9 +157,24 @@ public class UserService {
                 request.getMarketingEnabled(),
                 request.getEventSnsEnabled()
         );
+        /**
+         * 유저가 nickname 을 수정할 경우 현재 경매중인 상품의 nickname도 수정 (outbox 패턴을 이용하여 비동기 처리)
+         */
+        Long outboxId = TsidCreator.getTsid().toLong();
+        UserNicknameUpdateEvent event = new UserNicknameUpdateEvent(userId, request.getNickname(), outboxId);
 
-        // @Transactional + Dirty Checking → save 호출 불필요
+        outboxService.appendEvent(outboxId, "USER_NICKNAME_UPDATE", userId, event);
+        eventListener.publishEvent(event);
+
         return UserDetailResponseDto.from(user);
     }
+
+    @Transactional
+    public void increaseParticipationCount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+        user.participateInAuction();
+    }
+
 
 }

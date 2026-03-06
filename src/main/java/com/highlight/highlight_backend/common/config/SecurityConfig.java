@@ -74,7 +74,10 @@ public class SecurityConfig {
                         "/ws/**", "/topic/**", "/queue/**", "/app/**", // WebSocket 관련 (STOMP 포함)
                         "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**", // API 문서
                         "/swagger-ui.html", "/webjars/**", // Swagger UI 리소스
-                        "/error"                           // 에러 페이지
+                        "/error",                           // 에러 페이지
+                        "/actuator/**",
+                            "error-demo",
+                            "/api/loadtest/**"  // 테스트용 앤드포인트
                     ).permitAll()
                     
                     // 사용자 인증 필요 엔드포인트

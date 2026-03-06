@@ -1,72 +1,58 @@
-version: '3.8'
-
 services:
-  # -------------------- 데이터베이스 서비스 --------------------
-  highlight-db:
+  # DB 서버 이미지
+  mysql:
     image: mysql:8.0
-    container_name: highlight-db
-    restart: always # 컨테이너 비정상 종료 시 항상 재시작
+    container_name: test-mysql
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "${DB_PORT}:3306"
+      MYSQL_DATABASE: test_db
+      MYSQL_ROOT_PASSWORD: tagtag1010
+      TZ: Asia/Seoul
     volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - highlight-network
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$$MYSQL_ROOT_PASSWORD --silent" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
 
-  # -------------------- 백엔드 애플리케이션 서비스 --------------------
-  highlight-backend:
+  # 내 서버 이미지
+  target:
     build: .
-    image: highlight-backend # 로컬 빌드 시 사용할 이미지 이름
-    container_name: highlight-backend
-    restart: always # 컨테이너 비정상 종료 시 항상 재시작
-    depends_on:
-      highlight-db:
-        condition: service_healthy # highlight-db가 healthy 상태가 될 때까지 대기
-    environment:
-      # Profile
-      SPRING_PROFILES_ACTIVE: docker
-      # Server
-      SERVER_PORT: ${SERVER_PORT}
-      # Database
-      DB_HOST: highlight-db # DB 호스트를 서비스 이름으로 고정
-      DB_PORT: 3306 # 컨테이너 내부 포트
-      DB_NAME: ${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_DDL_AUTO: ${DB_DDL_AUTO}
-      DB_SHOW_SQL: ${DB_SHOW_SQL}
-      # JWT
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ACCESS_TOKEN_EXPIRE_TIME: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
-      JWT_REFRESH_TOKEN_EXPIRE_TIME: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
-      # AWS S3
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION: ${AWS_REGION}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      # CoolSMS
-      COOLSMS_API_KEY: ${COOLSMS_API_KEY}
-      COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
-      COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
+    image: user-target:latest
+    container_name: user-target
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
-    networks:
-      - highlight-network
+      - "8085:8085"
+    volumes:
+      - logs:/app/logs  # 해당 경로에 로그를 작성
+    environment:
+      TZ: Asia/Seoul
+      # 중요: JDBC URL의 host는 localhost가 아니라 서비스명 mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: tagtag1010
+    restart: unless-stopped
 
-# -------------------- 볼륨 및 네트워크 정의 --------------------
+  # 포워더 이미지
+  forwarder:
+    image: ${FORWARDER_IMAGE}
+    container_name: mcp-forwarder
+    depends_on: [target]
+    volumes:
+      - logs:/logs:ro  # 로그 파일을 읽음
+    environment:
+      MCP_LOG_INGEST_URL: "${MCP_DOMAIN}/api/servers/${SERVER_NAME}/ingest/logs"
+      MCP_METRIC_INGEST_URL: "${MCP_DOMAIN}/api/servers/${SERVER_NAME}/ingest/metrics"
+      MCP_HEALTH_INGEST_URL: "${MCP_DOMAIN}/api/servers/${SERVER_NAME}/ingest/health"
+      HEALTH_URL: "http://target:9090/actuator/health"  # 헬스 체크 대상 URL
+      MCP_TOKEN: "${INGEST_TOKEN}"
+      DISCORD_WEBHOOK_URL: "${DISCORD_WEBHOOK_URL}"
+      LOG_PATH: "/logs/application.log"
+      # target:9090 을 통해 내 서버의 9090 포트를 이용해 actuator 정보를 가져옴. 외부에는 노출 X(보안에 최적)
+      ACTUATOR_URL: "http://target:9090/actuator/metrics"
+    restart: unless-stopped
+
+
 volumes:
-  mysql_data:
-
-networks:
-  highlight-network:
-    driver: bridge
+  logs:
+  mysql-data:
