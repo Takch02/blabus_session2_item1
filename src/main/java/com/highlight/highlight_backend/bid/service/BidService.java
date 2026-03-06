@@ -94,12 +94,19 @@ public class BidService {
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
+        saveOutBoxAndPublish(userId, auction, savedBid, previousBidId, isNewBidder);
 
+        log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
+        
+        return BidResponseDto.fromMyBid(savedBid);
+    }
+
+    private void saveOutBoxAndPublish(Long userId, Auction auction, Bid savedBid, Long previousBidId, boolean isNewBidder) {
         // outbox 에 저장하기
 
         // 1. App에서 ID 생성 (시간순 정렬된 Long 값)
         long userEventOutboxId = TsidCreator.getTsid().toLong();
-        long bidNotiOutbodId = TsidCreator.getTsid().toLong();
+        long bidNotOutbid = TsidCreator.getTsid().toLong();
 
         // user.participation_count++ 를 위한 event
         BidCompleteEvent userEvent = new BidCompleteEvent(userId, userEventOutboxId);
@@ -107,18 +114,14 @@ public class BidService {
         outboxService.appendEvent(userEventOutboxId, "BID_USER_UPDATE", userId, userEvent);
 
         // 입찰 메시지를 위한 event
-        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), newBid.getId(), previousBidId,
-                newBid.getBidAmount(), isNewBidder, bidNotiOutbodId);
+        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), savedBid.getId(), previousBidId,
+                savedBid.getBidAmount(), isNewBidder, bidNotOutbid);
         // outbox에 저장
-        outboxService.appendEvent(bidNotiOutbodId, "BID_NOTI", newBid.getId(), bidEvent);
+        outboxService.appendEvent(bidNotOutbid, "BID_NOTI", savedBid.getId(), bidEvent);
 
         // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
         eventPublisher.publishEvent(userEvent);
         eventPublisher.publishEvent(bidEvent);
-
-        log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
-        
-        return BidResponseDto.fromMyBid(savedBid);
     }
 
 

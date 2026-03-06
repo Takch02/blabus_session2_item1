@@ -136,6 +136,7 @@ public class Auction {
      * 현재 우승자 이름
      */
     private String currentWinnerName;
+    private long currentWinnerId;
 
     /**
      * 최종 우승자 userID
@@ -280,6 +281,7 @@ public class Auction {
     public void updateHighestBid(User user, BigDecimal bidAmount, boolean isNewBidder) {
         this.currentHighestBid = bidAmount;
         this.currentWinnerName = user.getNickname();  // 현재 최고가 입찰 닉네임 넣기
+        this.currentWinnerId = user.getId();  // 현재 최고가 입찰 유저 ID 넣기
         this.winnerId = user.getId();  // 현재 최고가 입찰한 userId 입력
         this.totalBids++;
         if (isNewBidder) {

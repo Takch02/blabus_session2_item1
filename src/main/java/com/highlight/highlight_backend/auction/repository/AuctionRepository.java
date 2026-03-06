@@ -6,10 +6,7 @@ import com.highlight.highlight_backend.exception.BusinessException;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -135,4 +132,9 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
      */
     Long findAuctionByTotalBids(Long auctionId);
 
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Auction a SET a.currentWinnerName = :newNickname " +
+            "WHERE a.currentWinnerId = :userId AND a.status = 'ACTIVE'")
+    int updateWinnerNameByWinnerId(@Param("userId") Long userId, @Param("newNickname") String newNickname);
 }

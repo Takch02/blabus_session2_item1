@@ -1,7 +1,9 @@
 package com.highlight.highlight_backend.user.listener;
 
+import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
 import com.highlight.highlight_backend.common.outbox.OutboxService;
+import com.highlight.highlight_backend.user.dto.UserNicknameUpdateEvent;
 import com.highlight.highlight_backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class UserEventListener {
 
     private final UserService userService;
+    private final AuctionRepository auctionRepository;
     private final OutboxService outboxService;
 
     @Async // ★ 별도 스레드에서 실행 (메인 스레드 대기 안 함)
