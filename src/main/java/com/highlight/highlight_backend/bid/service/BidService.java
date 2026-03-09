@@ -2,23 +2,18 @@ package com.highlight.highlight_backend.bid.service;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.domain.Bid;
+import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
 import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
 import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.domain.User;
-import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.bid.dto.WinBidDetailResponseDto;
-import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.exception.BusinessException;
-import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BidErrorCode;
-import com.highlight.highlight_backend.exception.UserErrorCode;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,10 +33,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BidService {
-    
+
     private final BidRepository bidRepository;
-    private final AuctionRepository auctionRepository;
-    private final UserRepository userRepository;
     private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
     private final OutboxService outboxService;
@@ -49,36 +42,24 @@ public class BidService {
     /**
      * 입찰 참여
      * 변경 전 lock 순서 : Auction lock -> User lock -> 둘 다 Unlock
-     * 
-     * @param request 입찰 요청 정보
-     * @param userId 입찰하는 사용자 ID
-     * @return 입찰 결과 정보
      */
     @Transactional
-    public BidResponseDto createBid(BidCreateRequestDto request, Long userId) {
-        log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", userId, request.getAuctionId(), request.getBidAmount());
-        
-        // 1. 사용자 조회
-        User user = findUserOrThrow(userId);
-
-        // 2. 경매 조회 (PESSIMISTIC_WRITE 락 사용 (동시성 제어))
-        Auction auction = auctionRepository.findByIdWithLock(request.getAuctionId())
-            .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+    public BidResponseDto createBid(BidCreateRequestDto request, User user, Auction auction) {
+        log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
 
         // 경매, 입찰이 가능한 상태인지 검증
         // 예외 발생 시 종료.
         auction.validateBid(request.getBidAmount());
 
-        // 3. 이전 최고 입찰자 찾기 (알림용)
+        // 이전 최고 입찰자 찾기
         // (락이 걸려있으므로 가장 최신 데이터임이 보장됨)
         Bid previousTopBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)
                 .orElse(null);
-        
+
         // 새로운 입찰자인지 찾음
         boolean isNewBidder = !bidRepository.existsByAuctionAndUser(auction, user);
-        
-        // 5. 입찰 엔티티 생성
 
+        // 입찰 엔티티 생성
         Bid newBid = Bid.createBid(request, auction, user);
         // 새 입찰 저장
         Bid savedBid = bidRepository.save(newBid);
@@ -94,10 +75,10 @@ public class BidService {
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
-        saveOutBoxAndPublish(userId, auction, savedBid, previousBidId, isNewBidder);
+        saveOutBoxAndPublish(user.getId(), auction, savedBid, previousBidId, isNewBidder);
 
-        log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), userId, request.getBidAmount());
-        
+        log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), user.getId(), request.getBidAmount());
+
         return BidResponseDto.fromMyBid(savedBid);
     }
 
@@ -125,128 +106,10 @@ public class BidService {
     }
 
 
-    private void notifyBidResult(Bid newBid, Bid previousTopBid) {
-        // 1. 전체 방송 (새 입찰 발생)
-        bidNotificationService.sendNewBidNotification(newBid);
-
-        // 2. 개인 알림
-        // 이전 1등이 존재하고, 그게 '나'가 아닐 때만 알림
-        if (previousTopBid != null && !previousTopBid.getUser().equals(newBid.getUser())) {
-            bidNotificationService.sendBidOutbidNotification(previousTopBid, newBid);
-        }
-    }
-
-    /**
-     * 경매 입찰 내역 조회 (익명 처리) - 사용자별 최신 입찰만 반환
-     * 
-     * @param auctionId 경매 ID
-     * @param pageable 페이징 정보
-     * @return 입찰 내역 목록 (사용자별 최신 입찰)
-     */
-    public Page<BidResponseDto> getAuctionBids(Long auctionId, Pageable pageable) {
-        log.info("경매 입찰 내역 조회 (익명, 사용자별 최신): 경매ID={}", auctionId);
-
-        Auction auction = findAuctionOrThrow(auctionId);
-
-        Page<Bid> bids = bidRepository.findBidsByAuctionOrderByBidAmountDesc(auction, pageable);
-        
-        return bids.map(BidResponseDto::from);
-    }
-    
-    /**
-     * 경매 전체 입찰 내역 조회 (관리자용)
-     * 
-     * @param auctionId 경매 ID
-     * @param pageable 페이징 정보
-     * @return 모든 입찰 내역 목록
-     */
-    public Page<BidResponseDto> getAllAuctionBids(Long auctionId, Pageable pageable) {
-        log.info("경매 전체 입찰 내역 조회 (관리자): 경매ID={}", auctionId);
-
-        Auction auction = findAuctionOrThrow(auctionId);
-
-        Page<Bid> bids = bidRepository.findAllBidsByAuctionOrderByBidAmountDesc(auction, pageable);
-        
-        return bids.map(BidResponseDto::from);
-    }
-    
-    /**
-     * 경매 입찰 내역 조회 (본인 입찰 강조) - 사용자별 최신 입찰만 반환
-     * 
-     * @param auctionId 경매 ID
-     * @param userId 현재 사용자 ID
-     * @param pageable 페이징 정보
-     * @return 입찰 내역 목록 (사용자별 최신 입찰, 본인 입찰 강조)
-     */
-    public Page<BidResponseDto> getAuctionBidsWithUser(Long auctionId, Long userId, Pageable pageable) {
-        log.info("경매 입찰 내역 조회 (본인 강조, 사용자별 최신): 경매ID={}, 사용자ID={}", auctionId, userId);
-
-        Auction auction = findAuctionOrThrow(auctionId);
-
-        Page<Bid> bids = bidRepository.findBidsByAuctionOrderByBidAmountDesc(auction, pageable);
-        
-        return bids.map(bid -> BidResponseDto.fromWithUserInfo(bid, userId));
-    }
-    
-    /**
-     * 실시간 경매 상태 조회
-     * 
-     * @param auctionId 경매 ID
-     * @return 경매 상태 정보
-     */
-    public AuctionStatusResponseDto getAuctionStatus(Long auctionId) {
-        log.info("실시간 경매 상태 조회: 경매ID={}", auctionId);
-
-        Auction auction = findAuctionOrThrow(auctionId);
-
-        // 입찰 통계 조회
-        Long totalBidders = auction.getTotalBidders();
-        Long totalBids = auction.getTotalBids();
-
-        // 현재 최고 입찰자 조회
-        String winnerNickname = auction.getCurrentWinnerName();
-        
-        return AuctionStatusResponseDto.from(auction, totalBidders, totalBids, winnerNickname);
-    }
-
-    /**
-     * 사용자의 입찰 내역 조회
-     *
-     * @param userId 사용자 ID
-     * @param pageable 페이징 정보
-     * @return 사용자 입찰 내역
-     */
-    public Page<BidResponseDto> getUserBids(Long userId, Pageable pageable) {
-        log.info("사용자 입찰 내역 조회: 사용자ID={}", userId);
-
-        User user = findUserOrThrow(userId);
-
-        Page<Bid> bids = bidRepository.findBidsByUserOrderByCreatedAtDesc(user, pageable);
-
-        return bids.map(BidResponseDto::fromMyBid);
-    }
-
-    /**
-     * 사용자의 낙찰 내역 조회
-     *
-     * @param userId 사용자 ID
-     * @param pageable 페이징 정보
-     * @return 낙찰 내역
-     */
-    public Page<BidResponseDto> getUserWonBids(Long userId, Pageable pageable) {
-        log.info("사용자 낙찰 내역 조회: 사용자ID={}", userId);
-
-        User user = findUserOrThrow(userId);
-
-        Page<Bid> wonBids = bidRepository.findWonBidsByUser(user, pageable);
-
-        return wonBids.map(BidResponseDto::fromMyBid);
-    }
-
     /**
      * 낙찰 상세 정보 조회
      *
-     * @param bidId 입찰 ID
+     * @param bidId  입찰 ID
      * @param userId 사용자 ID
      * @return 낙찰 상세 정보
      */
@@ -255,7 +118,7 @@ public class BidService {
 
         // 1. 입찰 조회
         Bid bid = bidRepository.findById(bidId)
-            .orElseThrow(() -> new BusinessException(BidErrorCode.BID_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(BidErrorCode.BID_NOT_FOUND));
 
         // 2. 입찰 검증
         bid.validateWinBid(userId, bid);
@@ -268,22 +131,23 @@ public class BidService {
         return WinBidDetailResponseDto.fromWithCalculatedStats(bid, totalBids, totalBidders);
     }
 
+    public Page<Bid> findWonBidsByUser(User user, Pageable pageable) {
+        return bidRepository.findWonBidsByUser(user, pageable);
+    }
 
+    public Page<Bid> findBidsByUserOrderByCreatedAtDesc(User user, Pageable pageable) {
+        return bidRepository.findBidsByUserOrderByCreatedAtDesc(user, pageable);
+    }
 
+    public Page<Bid> findAllBidsByAuctionOrderByBidAmountDesc(Auction auction, Pageable pageable) {
+        return bidRepository.findAllBidsByAuctionOrderByBidAmountDesc(auction, pageable);
+    }
 
-    /**
-     * 경매에서 내 결과 조회
-     *
-     * @param auctionId 경매 ID
-     * @param userId 사용자 ID
-     * @return 경매 내 결과 정보
-     */
-    public AuctionMyResultResponseDto getMyAuctionResult(Long auctionId, Long userId) {
-        log.info("경매 내 결과 조회: 경매ID={}, 사용자ID={}", auctionId, userId);
+    public Page<Bid> findBidsByAuctionOrderByBidAmountDesc(Auction auction, Pageable pageable) {
+        return bidRepository.findBidsByAuctionOrderByBidAmountDesc(auction, pageable);
+    }
 
-        // 경매 조회
-        Auction auction = findAuctionOrThrow(auctionId);
-
+    public AuctionMyResultResponseDto calculateMyAuctionResult(Long auctionId, Long userId, Auction auction) {
         // 사용자의 해당 경매 입찰 내역 조회
         Optional<Bid> userBidOpt = bidRepository.findTopBidByAuction_IdAndUser_IdOrderByBidAmountDesc(auctionId, userId);
 
@@ -301,7 +165,7 @@ public class BidService {
 
         // 종료되지 않은 경매인 경우 에러
         if (auction.getStatus() != Auction.AuctionStatus.COMPLETED &&
-            auction.getStatus() != Auction.AuctionStatus.FAILED) {
+                auction.getStatus() != Auction.AuctionStatus.FAILED) {
             throw new BusinessException(BidErrorCode.AUCTION_NOT_ENDED);
         }
 
@@ -313,15 +177,5 @@ public class BidService {
             // 유찰
             return AuctionMyResultResponseDto.createLostResult(auction, userBid, auction.getCurrentHighestBid());
         }
-    }
-
-    private Auction findAuctionOrThrow(Long auctionId) {
-        return auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
-    }
-
-    private User findUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
     }
 }

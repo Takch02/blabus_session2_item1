@@ -2,7 +2,7 @@ package com.highlight.highlight_backend.auction.controller;
 
 import com.highlight.highlight_backend.auction.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.auction.dto.BuyItNowResponseDto;
-import com.highlight.highlight_backend.auction.service.UserAuctionSearchService;
+import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.auction.service.AdminAuctionService;
 import com.highlight.highlight_backend.auction.dto.AuctionSearchConditionDto;
@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +38,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserAuctionController {
     
     private final AdminAuctionService adminAuctionService;
-    private final UserAuctionSearchService userAuctionSearchService;
+    private final UserAuctionService userAuctionService;
 
 
     /**
@@ -79,7 +78,7 @@ public class UserAuctionController {
         log.info("GET /api/public/auctions - 경매 목록 조회 요청 (비로그인 사용자도 접근 가능)");
         AuctionSearchConditionDto auctionSearchConditionDto = new AuctionSearchConditionDto(category, brand,
                  minPrice, maxPrice, isPremium, status);
-        Slice<UserAuctionResponseDto> response = userAuctionSearchService.getProductsFiltered(
+        Slice<UserAuctionResponseDto> response = userAuctionService.getProductsFiltered(
                 auctionSearchConditionDto, pageable);
 
         return ResponseEntity.ok(

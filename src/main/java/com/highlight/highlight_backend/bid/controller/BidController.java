@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.bid.controller;
 
+import com.highlight.highlight_backend.bid.application.BidFacade;
 import com.highlight.highlight_backend.common.util.AuthenticationUtils;
 import com.highlight.highlight_backend.common.util.ResponseUtils;
 import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
@@ -20,16 +21,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * 입찰 관련 컨트롤러
@@ -45,6 +41,7 @@ import java.util.HashMap;
 public class BidController {
     
     private final BidService bidService;
+    private final BidFacade bidFacade;
     
     /**
      * 입찰 하기
@@ -77,7 +74,7 @@ public class BidController {
         log.info("POST /api/bids - 입찰 참여 요청 (사용자: {}, 경매: {}, 금액: {})", 
                 userId, request.getAuctionId(), request.getBidAmount());
         
-        BidResponseDto response = bidService.createBid(request, userId);
+        BidResponseDto response = bidFacade.createBidFacade(request, userId);
         
         return ResponseUtils.success(response, "입찰에 성공했습니다.");
     }
@@ -111,7 +108,7 @@ public class BidController {
         
         log.info("GET /api/auctions/{}/bids - 경매 입찰 내역 조회 (익명)", auctionId);
         
-        Page<BidResponseDto> response = bidService.getAuctionBids(auctionId, pageable);
+        Page<BidResponseDto> response = bidFacade.getAuctionBids(auctionId, pageable);
         
         return ResponseUtils.success(response, "입찰 내역 조회가 완료되었습니다.");
     }
@@ -136,7 +133,7 @@ public class BidController {
         Long userId = AuthenticationUtils.extractUserId(authentication);
         log.info("GET /api/auctions/{}/bids/with-user - 경매 입찰 내역 조회 (본인 강조, 사용자: {})", auctionId, userId);
         
-        Page<BidResponseDto> response = bidService.getAuctionBidsWithUser(auctionId, userId, pageable);
+        Page<BidResponseDto> response = bidFacade.getAuctionBidsWithUser(auctionId, userId, pageable);
         
         return ResponseUtils.success(response, "입찰 내역 조회가 완료되었습니다.");
     }
@@ -170,7 +167,7 @@ public class BidController {
         
         log.info("GET /admin/auctions/{}/bids/all - 경매 전체 입찰 내역 조회 (관리자)", auctionId);
         
-        Page<BidResponseDto> response = bidService.getAllAuctionBids(auctionId, pageable);
+        Page<BidResponseDto> response = bidFacade.getAllAuctionBids(auctionId, pageable);
         
         return ResponseUtils.success(response, "전체 입찰 내역 조회가 완료되었습니다.");
     }
@@ -189,7 +186,7 @@ public class BidController {
         
         log.info("GET /api/auctions/{}/status - 실시간 경매 상태 조회", auctionId);
         
-        AuctionStatusResponseDto response = bidService.getAuctionStatus(auctionId);
+        AuctionStatusResponseDto response = bidFacade.getAuctionStatus(auctionId);
         
         return ResponseUtils.success(response, "경매 상태 조회가 완료되었습니다.");
     }
@@ -211,7 +208,7 @@ public class BidController {
         Long userId = AuthenticationUtils.extractUserId(authentication);
         log.info("GET /api/users/bids - 내 입찰 내역 조회 (사용자: {})", userId);
         
-        Page<BidResponseDto> response = bidService.getUserBids(userId, pageable);
+        Page<BidResponseDto> response = bidFacade.getUserBids(userId, pageable);
         
         return ResponseUtils.success(response, "내 입찰 내역 조회가 완료되었습니다.");
     }
@@ -233,7 +230,7 @@ public class BidController {
         Long userId = AuthenticationUtils.extractUserId(authentication);
         log.info("GET /api/users/wins - 내 낙찰 내역 조회 (사용자: {})", userId);
         
-        Page<BidResponseDto> response = bidService.getUserWonBids(userId, pageable);
+        Page<BidResponseDto> response = bidFacade.getUserWonBids(userId, pageable);
         
         return ResponseUtils.success(response, "내 낙찰 내역 조회가 완료되었습니다.");
     }
@@ -277,7 +274,7 @@ public class BidController {
         Long userId = AuthenticationUtils.extractUserId(authentication);
         log.info("GET /api/auctions/{}/my-result - 경매 내 결과 조회 (사용자: {})", auctionId, userId);
         
-        AuctionMyResultResponseDto response = bidService.getMyAuctionResult(auctionId, userId);
+        AuctionMyResultResponseDto response = bidFacade.getMyAuctionResult(auctionId, userId);
         
         return ResponseUtils.success(response, "경매 결과 조회가 완료되었습니다.");
     }
