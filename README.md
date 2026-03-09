@@ -38,6 +38,13 @@
   - **TSID 및 Scheduler 적용:** TSID 기반 인덱싱으로 고속 조회 환경을 구축하고, 스케줄러를 통해 미처리 이벤트를 재전송하여 **결과적 일관성(Eventual Consistency)** 보장.
 - **📊 Result:** Deadlock 이슈 완벽 제거 및 고의적인 이벤트 유실 테스트 환경(Mockito 기반)에서도 100% 재처리 검증 완료.
 
+### 3. MSA 전환을 대비한 도메인 중심 아키텍처(Package by Feature) 재편
+- **🚨 Problem:** 초기 개발 시 계층형 구조(Package by Layer)를 채택하여, 서비스 규모가 커짐에 따라 도메인 간의 결합도가 높아지고(High Coupling) 비즈니스 흐름을 파악하기 어려운 유지보수 한계 직면.
+- **💡 Solution:**
+  - **도메인 중심 패키지 분리:** 기존 `controller/`, `service/`, `repository/` 구조를 `auction/`, `user/`, `bid/` 등 비즈니스 도메인(Feature) 단위로 구조 전면 리팩토링.
+  - **의존성 격리:** 각 도메인이 독립적으로 동작할 수 있도록 패키지 간 순환 참조 및 강결합을 끊어내고 인터페이스 기반으로 통신하도록 개선.
+- **📊 Result:** 도메인 내의 응집도를 높이고 타 도메인과의 결합도를 낮추어 코드 가독성 및 유지보수성을 항샹.
+
 <br>
 
 ## 🏆 Hackathon Achievements (Phase 1)
