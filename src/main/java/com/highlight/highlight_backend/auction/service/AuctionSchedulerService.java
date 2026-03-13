@@ -1,11 +1,9 @@
-
 package com.highlight.highlight_backend.auction.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.product.domian.Product;
-import com.highlight.highlight_backend.bid.repository.BidRepository;
-import com.highlight.highlight_backend.product.repository.ProductRepository;
+import com.highlight.highlight_backend.bid.service.BidService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
@@ -27,7 +25,7 @@ public class AuctionSchedulerService {
 
     private final TaskScheduler taskScheduler;
 
-    private final BidRepository bidRepository;
+    private final BidService bidService;
     private final AuctionRepository auctionRepository;
 
     private final AuctionNotificationService auctionNotificationService;
@@ -105,7 +103,7 @@ public class AuctionSchedulerService {
                     auction.getProduct().setStatus(Product.ProductStatus.AUCTION_COMPLETED);
                 }
                 // 낙찰자 찾기
-                var winnerBid = bidRepository.findCurrentHighestBidByAuction(auction).orElse(null);
+                var winnerBid = bidService.findCurrentHighestBid(auction).orElse(null);
                 if (winnerBid != null) {
                     auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
                 }

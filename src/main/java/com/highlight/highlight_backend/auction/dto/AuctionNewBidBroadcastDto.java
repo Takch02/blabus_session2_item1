@@ -1,8 +1,9 @@
-package com.highlight.highlight_backend.bid.dto;
+package com.highlight.highlight_backend.auction.dto;
 
 import com.highlight.highlight_backend.bid.domain.Bid;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -14,10 +15,11 @@ import java.time.LocalDateTime;
  * @author 전우선
  * @since 2025.08.15
  */
+@Builder
 @Getter
 @AllArgsConstructor
 @Schema(description = "입찰 WebSocket 메시지 데이터 DTO")
-public class BidWebSocketDto {
+public class AuctionNewBidBroadcastDto {
     
     /**
      * 입찰 ID
@@ -70,10 +72,10 @@ public class BidWebSocketDto {
     /**
      * Bid 엔티티와 통계 정보로부터 DTO 생성
      */
-    public static BidWebSocketDto from(Bid bid, Long totalBidders, Long totalBids) {
+    public static AuctionNewBidBroadcastDto from(Bid bid, Long totalBidders, Long totalBids) {
         String maskedNickname = maskNickname(bid.getUser().getNickname());
         
-        return new BidWebSocketDto(
+        return new AuctionNewBidBroadcastDto(
             bid.getId(),
             maskedNickname,
             bid.getBidAmount(),
@@ -102,5 +104,21 @@ public class BidWebSocketDto {
         }
         
         return nickname;
+    }
+
+    public static AuctionNewBidBroadcastDto fromEvent(
+            Long bidId,
+            BigDecimal bidAmount,
+            String bidderNickname,
+            Long totalBidders,
+            Long totalBids) {
+
+        return AuctionNewBidBroadcastDto.builder()
+                .bidId(bidId)
+                .bidAmount(bidAmount)
+                .bidderNickname(bidderNickname)
+                .totalBidders(totalBidders)
+                .totalBids(totalBids)
+                .build();
     }
 }
