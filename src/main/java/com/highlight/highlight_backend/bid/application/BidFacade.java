@@ -32,14 +32,13 @@ public class BidFacade {
      */
     @Transactional
     public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
-        // 1. 타 도메인 데이터 조회 (User)
+
         User user = userService.getUserOrThrow(userId);
 
         // 2. 타 도메인 데이터 조회 및 락 획득 (Auction)
-        // 주의: AuctionService 안에 findByIdWithLock 을 호출하는 메서드가 있어야 함
         Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
+        auction.validateBid(request.getBidAmount());
 
-        // 3. 핵심 비즈니스 로직 위임 (Bid)
         return bidService.createBid(request, user, auction);
     }
 

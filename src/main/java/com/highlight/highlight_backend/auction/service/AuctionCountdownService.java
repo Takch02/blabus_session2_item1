@@ -45,9 +45,10 @@ public class AuctionCountdownService {
                     log.info("경매 종료 시간 도달: 경매ID={}", auction.getId());
                     continue; // 종료된 경매는 스킵 (AuctionService에서 별도 처리)
                 }
-                
+                Long totalBidders = auctionRepository.findAuctionByTotalBidders(auction.getId());
+                Long totalBids = auctionRepository.findAuctionByTotalBids(auction.getId());
                 // WebSocket으로 경매 상태 업데이트 전송 (남은 시간 포함)
-                bidNotificationService.sendAuctionStatusUpdate(auction);
+                bidNotificationService.sendAuctionStatusUpdate(auction, totalBidders, totalBids);
             }
             
             if (!inProgressAuctions.isEmpty()) {

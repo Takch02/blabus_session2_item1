@@ -2,6 +2,7 @@ package com.highlight.highlight_backend.auction.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.dto.AuctionSearchConditionDto;
+import com.highlight.highlight_backend.auction.dto.AuctionStatsDto;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
@@ -44,5 +45,12 @@ public class UserAuctionService {
     public Auction findAuctionOrThrow(Long auctionId) {
         return auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public AuctionStatsDto getAuctionStats(Long auctionId) {
+        Long totalBidders = auctionRepository.findAuctionByTotalBidders(auctionId);
+        Long totalBids = auctionRepository.findAuctionByTotalBids(auctionId);
+        return new AuctionStatsDto(totalBidders, totalBids);
     }
 }

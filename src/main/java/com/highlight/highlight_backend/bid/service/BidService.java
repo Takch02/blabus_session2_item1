@@ -4,8 +4,7 @@ import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
-import com.highlight.highlight_backend.bid.event.BidCompleteEvent;
-import com.highlight.highlight_backend.bid.event.BidNotificationEvent;
+import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
@@ -22,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -35,9 +36,39 @@ import java.util.Optional;
 public class BidService {
 
     private final BidRepository bidRepository;
-    private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
     private final OutboxService outboxService;
+
+    /**
+     * 특정 경매의 최고 입찰자 조회
+     */
+    public Optional<Bid> findCurrentHighestBid(Auction auction) {
+        return bidRepository.findCurrentHighestBidByAuction(auction);
+    }
+
+    /**
+     * 입찰을 낙찰 상태로 변경
+     */
+    @Transactional
+    public void setBidAsWon(Bid bid) {
+        log.info("입찰 낙찰 처리: 입찰ID={}, 사용자={}", bid.getId(), bid.getUser().getId());
+        bid.setAsWon();
+    }
+
+    /**
+     * 즉시구매 입찰 생성
+     */
+    @Transactional
+    public Bid createBuyItNowBid(Auction auction, User user) {
+        Bid buyItNowBid = new Bid();
+        buyItNowBid.setAuction(auction);
+        buyItNowBid.setUser(user);
+        buyItNowBid.setBidAmount(auction.getBuyItNowPrice());
+        buyItNowBid.setCreatedAt(LocalDateTime.now());
+        buyItNowBid.setIsBuyItNow(true);
+
+        return bidRepository.save(buyItNowBid);
+    }
 
     /**
      * 입찰 참여
@@ -47,12 +78,7 @@ public class BidService {
     public BidResponseDto createBid(BidCreateRequestDto request, User user, Auction auction) {
         log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
 
-        // 경매, 입찰이 가능한 상태인지 검증
-        // 예외 발생 시 종료.
-        auction.validateBid(request.getBidAmount());
-
-        // 이전 최고 입찰자 찾기
-        // (락이 걸려있으므로 가장 최신 데이터임이 보장됨)
+        // 이전 최고 입찰자 찾기 (락이 걸려있으므로 가장 최신 데이터임이 보장됨)
         Bid previousTopBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)
                 .orElse(null);
 
@@ -65,44 +91,38 @@ public class BidService {
         Bid savedBid = bidRepository.save(newBid);
 
         // 6. 기존 최고 입찰을 OUTBID로 변경 및 개인 알림
-        if (previousTopBid != null) {
-            previousTopBid.outBid();
-        }
-
-        // 경매 최고가 갱신 및 입찰 참여자 수 갱신
-        auction.updateHighestBid(user, request.getBidAmount(), isNewBidder);
+        if (previousTopBid != null) previousTopBid.outBid();
 
         // Listener 에게 던지기 전에 null 체크
         Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
 
-        saveOutBoxAndPublish(user.getId(), auction, savedBid, previousBidId, isNewBidder);
-
+        saveOutBoxAndPublish(user.getId(), auction.getId(), savedBid.getId(), savedBid.getBidAmount(), previousBidId, isNewBidder, user.getNickname());
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), user.getId(), request.getBidAmount());
 
         return BidResponseDto.fromMyBid(savedBid);
     }
 
-    private void saveOutBoxAndPublish(Long userId, Auction auction, Bid savedBid, Long previousBidId, boolean isNewBidder) {
-        // outbox 에 저장하기
+    private void saveOutBoxAndPublish(Long userId, Long auctionId, Long bidId, BigDecimal bidAmount, Long previousBidId, boolean isNewBidder, String userNickname) {
 
-        // 1. App에서 ID 생성 (시간순 정렬된 Long 값)
-        long userEventOutboxId = TsidCreator.getTsid().toLong();
-        long bidNotOutbid = TsidCreator.getTsid().toLong();
+        // 1. Outbox ID 생성
+        long outboxId = TsidCreator.getTsid().toLong();
 
-        // user.participation_count++ 를 위한 event
-        BidCompleteEvent userEvent = new BidCompleteEvent(userId, userEventOutboxId);
-        // outbox에 저장
-        outboxService.appendEvent(userEventOutboxId, "BID_USER_UPDATE", userId, userEvent);
+        // 2. 모든 도메인(유저, 경매, 알림)이 필요로 하는 정보를 모두 담은 '단일 이벤트' 생성
+        BidCreatedEvent bidCreatedEvent = new BidCreatedEvent(
+                outboxId, userId, auctionId, bidId, previousBidId, bidAmount, isNewBidder, userNickname
+        );
 
-        // 입찰 메시지를 위한 event
-        BidNotificationEvent bidEvent = new BidNotificationEvent(userId, auction.getId(), savedBid.getId(), previousBidId,
-                savedBid.getBidAmount(), isNewBidder, bidNotOutbid);
-        // outbox에 저장
-        outboxService.appendEvent(bidNotOutbid, "BID_NOTI", savedBid.getId(), bidEvent);
+        // 3. 이벤트 주체는 BID
+        outboxService.appendEvent(
+                outboxId,
+                "BID",     // aggregateType: 이벤트 발생 주체 도메인
+                bidId,     // aggregateId: 발생 주체의 식별자
+                bidCreatedEvent
+        );
 
-        // User.participationCount 증가 및 Websocket 메시지 전송은 EventListener 에게 비동기로 처리
-        eventPublisher.publishEvent(userEvent);
-        eventPublisher.publishEvent(bidEvent);
+        // 4. 이벤트 발행
+        eventPublisher.publishEvent(bidCreatedEvent);
+        outboxService.markPublished(outboxId);  // published = true (발행 완료)
     }
 
 

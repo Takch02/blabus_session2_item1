@@ -1,12 +1,12 @@
 package com.highlight.highlight_backend.auction.controller;
 
+import com.highlight.highlight_backend.auction.application.AuctionFacade;
 import com.highlight.highlight_backend.auction.dto.AuctionEndRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionResponseDto;
 import com.highlight.highlight_backend.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionStartRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionUpdateRequestDto;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.auction.service.AdminAuctionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "경매 관리 (관리자)", description = "경매 예약, 시작, 종료, 중단 관련 관리자 API")
 public class AdminAuctionController {
     
-    private final AdminAuctionService adminAuctionService;
+    private final AuctionFacade auctionFacade;
     
     /**
      * 경매 예약
@@ -69,7 +69,7 @@ public class AdminAuctionController {
         log.info("POST /api/admin/auctions/schedule - 경매 예약 요청: 상품 {} (관리자: {})",
                 request.getProductId(), adminId);
         
-        AuctionResponseDto response = adminAuctionService.scheduleAuction(request, adminId);
+        AuctionResponseDto response = auctionFacade.scheduleAuction(request, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "경매가 성공적으로 예약되었습니다.")
@@ -112,7 +112,7 @@ public class AdminAuctionController {
         log.info("POST /api/admin/auctions/{}/start - 경매 시작 요청 (관리자: {}, 즉시시작: {})",
                 auctionId, adminId, request.isImmediateStart());
         
-        AuctionResponseDto response = adminAuctionService.startAuction(auctionId, request, adminId);
+        AuctionResponseDto response = auctionFacade.startAuction(auctionId, request, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "경매가 성공적으로 시작되었습니다.")
@@ -153,7 +153,7 @@ public class AdminAuctionController {
                 auctionId, adminId);
 
         // immediateStart는 기본값이 false이므로 별도 설정 필요
-        AuctionResponseDto response = adminAuctionService.startAuction(auctionId,
+        AuctionResponseDto response = auctionFacade.startAuction(auctionId,
             new AuctionStartRequestDto() {{ setImmediateStart(true); }}, adminId);
         
         return ResponseEntity.ok(
@@ -182,7 +182,7 @@ public class AdminAuctionController {
                 auctionId, adminId, request.isCancel());
 
         String endReason = request.getEndReason();
-        AuctionResponseDto response = adminAuctionService.endAuction(auctionId, adminId, endReason);
+        AuctionResponseDto response = auctionFacade.endAuction(auctionId, adminId, endReason);
         
         String message = request.isCancel() ? "경매가 중단되었습니다." : "경매가 종료되었습니다.";
         
@@ -214,7 +214,7 @@ public class AdminAuctionController {
         request.setImmediateEnd(true);
         request.setEndReason("관리자 즉시 종료");
         
-        AuctionResponseDto response = adminAuctionService.endAuctionImmediately(auctionId, adminId);
+        AuctionResponseDto response = auctionFacade.endAuction(auctionId, adminId, "관리자 즉시 종료");
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "경매가 즉시 종료되었습니다.")
@@ -245,7 +245,7 @@ public class AdminAuctionController {
         request.setCancel(true);
         request.setEndReason("관리자 즉시 중단");
         
-        AuctionResponseDto response = adminAuctionService.cancelAuction(auctionId, adminId);
+        AuctionResponseDto response = auctionFacade.cancelAuction(auctionId, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "경매가 즉시 중단되었습니다.")
@@ -290,7 +290,7 @@ public class AdminAuctionController {
         log.info("PUT /api/admin/auctions/{} - 경매 수정 요청 (관리자: {})",
                 auctionId, adminId);
         
-        AuctionResponseDto response = adminAuctionService.updateAuction(auctionId, request, adminId);
+        AuctionResponseDto response = auctionFacade.updateAuction(auctionId, request, adminId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "경매가 성공적으로 수정되었습니다.")

@@ -31,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminProductService {
 
     private final ProductRepository productRepository;
-
     private final AdminAuthService adminService;
     private final AdminProductImageService adminProductImageService;
 
@@ -184,6 +183,21 @@ public class AdminProductService {
                 product.getProductName(), product.getId(), isPremium);
         
         return ProductResponseDto.from(product);
+    }
+
+    /**
+     * 상품 상태 변경 (타 도메인에서 호출용)
+     */
+    @Transactional
+    public void updateProductStatus(Long productId, Product.ProductStatus status) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
+        product.setStatus(status);
+    }
+
+    public Product getProductOrThrow(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
     }
 
 

@@ -1,10 +1,10 @@
 package com.highlight.highlight_backend.auction.controller;
 
+import com.highlight.highlight_backend.auction.application.AuctionFacade;
 import com.highlight.highlight_backend.auction.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.auction.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
-import com.highlight.highlight_backend.auction.service.AdminAuctionService;
 import com.highlight.highlight_backend.auction.dto.AuctionSearchConditionDto;
 import com.highlight.highlight_backend.product.dto.UserAuctionResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "유저 경매 검색", description = "유저 경매 검색 API")
 public class UserAuctionController {
     
-    private final AdminAuctionService adminAuctionService;
+    private final AuctionFacade auctionFacade;
     private final UserAuctionService userAuctionService;
 
 
@@ -116,7 +116,7 @@ public class UserAuctionController {
         log.info("POST /api/user/auctions/buy-it-now - 즉시구매 요청 (사용자: {})",
                  userId);
         
-        BuyItNowResponseDto response = adminAuctionService.buyItNow(request, userId);
+        BuyItNowResponseDto response = auctionFacade.buyItNow(request, userId);
         
         return ResponseEntity.ok(
             ResponseDto.success(response, "즉시구매가 완료되었습니다.")
