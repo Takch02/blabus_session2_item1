@@ -2,10 +2,12 @@ package com.highlight.highlight_backend.bid.service;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.common.outbox.OutboxService;
+import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
@@ -15,6 +17,8 @@ import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import static com.highlight.highlight_backend.exception.AuctionErrorCode.ALREADY_HAVE_LOCK;
 
 /**
  * 입찰 관련 비즈니스 로직 서비스
@@ -35,10 +42,10 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class BidService {
 
+    private final UserAuctionService userAuctionService;
     private final BidRepository bidRepository;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
     private final OutboxService outboxService;
-
     /**
      * 특정 경매의 최고 입찰자 조회
      */
@@ -75,30 +82,39 @@ public class BidService {
      * 변경 전 lock 순서 : Auction lock -> User lock -> 둘 다 Unlock
      */
     @Transactional
-    public BidResponseDto createBid(BidCreateRequestDto request, User user, Auction auction) {
-        log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
+    public BidResponseDto createBid(BidCreateRequestDto request, User user) {
 
-        // 이전 최고 입찰자 찾기 (락이 걸려있으므로 가장 최신 데이터임이 보장됨)
+        log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
+        // 락 없는 일반 조회
+        Auction auction = userAuctionService.getAuctionOrThrow(request.getAuctionId());
+        auction.validateBid(request.getBidAmount());
+
         Bid previousTopBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)
                 .orElse(null);
 
-        // 새로운 입찰자인지 찾음
         boolean isNewBidder = !bidRepository.existsByAuctionAndUser(auction, user);
 
-        // 입찰 엔티티 생성
         Bid newBid = Bid.createBid(request, auction, user);
-        // 새 입찰 저장
         Bid savedBid = bidRepository.save(newBid);
 
-        // 6. 기존 최고 입찰을 OUTBID로 변경 및 개인 알림
-        if (previousTopBid != null) previousTopBid.outBid();
+        Long previousBidId = null;
+        if (previousTopBid != null) {
+            previousTopBid.outBid();
+            previousBidId = previousTopBid.getId();
+        }
 
-        // Listener 에게 던지기 전에 null 체크
-        Long previousBidId = (previousTopBid != null) ? previousTopBid.getId() : null;
+        // === 락은 풀렸지만 아직 같은 트랜잭션 안 ===
+        saveOutBoxAndPublish(
+                user.getId(),
+                auction.getId(),
+                savedBid.getId(),
+                savedBid.getBidAmount(),
+                previousBidId,
+                isNewBidder,
+                user.getNickname()
+        );
 
-        saveOutBoxAndPublish(user.getId(), auction.getId(), savedBid.getId(), savedBid.getBidAmount(), previousBidId, isNewBidder, user.getNickname());
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), user.getId(), request.getBidAmount());
-
         return BidResponseDto.fromMyBid(savedBid);
     }
 
@@ -122,7 +138,6 @@ public class BidService {
 
         // 4. 이벤트 발행
         eventPublisher.publishEvent(bidCreatedEvent);
-        outboxService.markPublished(outboxId);  // published = true (발행 완료)
     }
 
 

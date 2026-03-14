@@ -27,13 +27,21 @@ import java.time.LocalDateTime;
  * @since 2025.08.15
  */
 @Entity
-@Table(name = "bid")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@Table(
+        name = "bid",
+        indexes = {
+                // 1. 최고 입찰가 조회용 인덱스 (경매ID + 입찰금액 내림차순)
+                @Index(name = "idx_auction_bid_amount", columnList = "auction_id, bid_amount DESC"),
+                // 2. 신규 입찰자 검증용 인덱스 (경매ID + 유저ID)
+                @Index(name = "idx_auction_user", columnList = "auction_id, user_id")
+        }
+)
 public class Bid {
     
     @Id

@@ -8,14 +8,20 @@ import com.highlight.highlight_backend.bid.dto.AuctionStatusResponseDto;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.bid.service.BidService;
+import com.highlight.highlight_backend.exception.AuctionErrorCode;
+import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -25,21 +31,34 @@ public class BidFacade {
     private final UserService userService;
     private final UserAuctionService userAuctionService;
     private final BidService bidService;
+    private final RedissonClient redissonClient;
 
     /**
      * 입찰 생성 UseCase
      * 트랜잭션을 여기서 시작하여, 락 획득부터 입찰 저장까지 하나의 작업 단위로 묶음
      */
-    @Transactional
-    public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
 
+    public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
         User user = userService.getUserOrThrow(userId);
 
-        // 2. 타 도메인 데이터 조회 및 락 획득 (Auction)
-        Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
-        auction.validateBid(request.getBidAmount());
+        String lockKey = "LOCK_AUCTION_" + request.getAuctionId();
+        RLock lock = redissonClient.getFairLock(lockKey);
 
-        return bidService.createBid(request, user, auction);
+        try {
+            boolean acquired = lock.tryLock(5, 5, TimeUnit.SECONDS);
+            if (!acquired) throw new BusinessException(AuctionErrorCode.ALREADY_HAVE_LOCK);  // Lock 대기 예외
+
+            // 락을 쥔 상태에서, 트랜잭션이 걸린 진짜 서비스 메서드를 호출!
+            return bidService.createBid(request, user);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Interrupt flag = false 로 깨어나게 되므로 다시 true로 수정
+            throw new BusinessException(AuctionErrorCode.AUCTION_LOCK_INTERRUPT);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock(); // 트랜잭션 커밋이 완벽히 끝난 후 락이 풀림!
+            }
+        }
     }
 
     /**

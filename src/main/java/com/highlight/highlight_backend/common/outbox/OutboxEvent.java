@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "outbox_event", indexes = {
-        @Index(name = "idx_outbox_published", columnList = "published"), // ★ 스케줄러 성능 핵심
-        //@Index(name = "idx_outbox_created_at", columnList = "createdAt") // 청소(Delete)용
+        @Index(name = "idx_outbox_published", columnList = "published, created_at"), // ★ 스케줄러 성능 핵심
+        @Index(name = "idx_outbox_created_at", columnList = "createdAt") // 청소(Delete)용
 })
 public class OutboxEvent {
 
@@ -47,7 +47,7 @@ public class OutboxEvent {
         this.aggregateId = aggregateId;
         this.eventType = eventType;
         this.payload = payload;
-        this.published = false; // 기본값은 미처리 상태
+        this.published = true;
     }
 
     // 처리 완료 마킹

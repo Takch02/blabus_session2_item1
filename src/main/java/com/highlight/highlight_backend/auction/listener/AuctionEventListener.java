@@ -23,13 +23,22 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class AuctionEventListener {
 
     private final AuctionWebSocketNotifier auctionWebSocketNotifier;
+    private final EventConsumerLogService eventConsumerLogService;
     private final AuctionRepository auctionRepository;
     private final OutboxService outboxService;
+    private static final String auctionUsernameUpdate = "AUCTION_USERNAME_UPDATE";
+    private static final String auctionNotiBoardCast = "AUCTION_NOTI_BOARDCAST";
 
+    /**
+     * Auction의 Nickname 비동기로 수정
+     */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleNicknameUpdate(UserNicknameUpdateEvent event) {
+        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), auctionUsernameUpdate)) {
+            return;
+        }
+
         try {
             int updatedCount = auctionRepository.updateWinnerNameByWinnerId(
                     event.getUserId(),
@@ -38,8 +47,10 @@ public class AuctionEventListener {
             log.info("닉네임 변경 반영 완료: 업데이트된 경매 수 = {}", updatedCount);
 
             outboxService.markPublished(event.getOutboxId());
+            eventConsumerLogService.markAsSuccess(event.getOutboxId(), auctionUsernameUpdate);
         } catch (Exception e) {
             log.error("닉네임 동기화 중 에러 발생", e);
+            eventConsumerLogService.markAsFailed(event.getOutboxId(), auctionUsernameUpdate, e.getMessage());
         }
     }
 
@@ -67,21 +78,35 @@ public class AuctionEventListener {
 
         } catch (Exception e) {
             log.error("경매 최고가 갱신 실패. 배치 재시도 대상이 됩니다. auctionId={}", event.getAuctionId(), e);
-
-            throw e;
         }
     }
 
+    @EventListener
+    public void createLogEvent(BidCreatedEvent event) {
+        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionUsernameUpdate);
+        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionNotiBoardCast);
+        log.info("🎫 [동기] 경매 유저 nickname 업데이트 대기표 발급 완료 (EventId={})", event.getOutboxId());
+        log.info("🎫 [동기] 경매 websocket 발송 대기표 발급 완료 (EventId={})", event.getOutboxId());
+    }
+
+    /**
+     * Auction Websocket 전송
+     * 비동기 처리
+     */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuctionWebSocketNotification(BidCreatedEvent event) {
         log.info("🔔 [경매 모듈] 웹소켓 방송 이벤트 수신: AuctionId={}", event.getAuctionId());
+        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), auctionNotiBoardCast)) {
+            return;
+        }
 
         try {
             auctionWebSocketNotifier.sendNewBidNotification(event);
+            eventConsumerLogService.markAsSuccess(event.getOutboxId(), auctionNotiBoardCast);
         } catch (Exception e) {
             log.error("❌ [경매 모듈] 웹소켓 발송 실패: {}", e.getMessage(), e);
+            eventConsumerLogService.markAsFailed(event.getOutboxId(), auctionNotiBoardCast, e.getMessage());
         }
     }
 }
