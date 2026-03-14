@@ -2,15 +2,12 @@ package com.highlight.highlight_backend.user.listener;
 
 import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.common.logEvent.EventConsumerLogService;
-import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -41,10 +38,19 @@ public class UserEventListener {
      */
     @Async //  별도 스레드에서 실행
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) // 커밋 성공 후에만 실행
-    @Transactional(propagation = Propagation.REQUIRES_NEW) // 새로운 트랜잭션 시작
     public void handleUserUpdate(BidCreatedEvent event) {
+        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), CONSUMER_NAME)) {
+            return;
+        }
 
-        userService.increaseParticipationCount(event.getUserId());
-        log.info("입찰 후 User.participation_count++ 비동기 이벤트 처리 완료 UserId={}", event.getUserId());
+        try {
+            userService.increaseParticipationCount(event.getUserId());
+            eventConsumerLogService.markAsSuccess(event.getOutboxId(), CONSUMER_NAME);
+            log.info("✅ 유저 참여 횟수 증가 완료 및 상태 업데이트 (EventId={})", event.getOutboxId());
+
+        } catch (Exception e) {
+            log.error("❌ 유저 참여 횟수 증가 실패. 재시도 대상이 됩니다. (EventId={})", event.getOutboxId(), e);
+            eventConsumerLogService.markAsFailed(event.getOutboxId(), CONSUMER_NAME, e.getMessage());
+        }
     }
 }

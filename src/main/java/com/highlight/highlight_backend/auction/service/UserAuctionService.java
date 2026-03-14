@@ -42,6 +42,11 @@ public class UserAuctionService {
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
     }
 
+    public Auction getAuctionOrThrow(Long auctionId) {
+        return auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+    }
+
     public Auction findAuctionOrThrow(Long auctionId) {
         return auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));

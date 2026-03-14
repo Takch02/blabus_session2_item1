@@ -19,7 +19,9 @@ public class EventConsumerLogService {
 
     @Transactional(propagation = Propagation.REQUIRED) // 메인 트랜잭션에 합류
     public void preRegisterLog(Long eventId, String consumerName) {
-        eventConsumerLogRepository.save(new EventConsumerLog(eventId, consumerName));
+        if (!eventConsumerLogRepository.existsByEventIdAndConsumerName(eventId, consumerName)) {
+            eventConsumerLogRepository.save(new EventConsumerLog(eventId, consumerName));
+        }
     }
 
     /**

@@ -176,7 +176,7 @@ public class UserService {
         user.participateInAuction();
     }
 
-
+    @Transactional(readOnly = true)
     public User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));

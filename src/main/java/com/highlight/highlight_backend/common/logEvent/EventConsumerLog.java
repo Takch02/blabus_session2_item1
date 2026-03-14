@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
     uniqueConstraints = {
         // 동일한 이벤트에 대해 같은 수신자가 대기표를 두 번 뽑지 못하도록 방어 (멱등성)
         @UniqueConstraint(columnNames = {"event_id", "consumer_name"})
+    },
+    indexes = {
+            @Index(name = "idx_log_status_updated", columnList = "status, updated_at")
     }
 )
 public class EventConsumerLog {
