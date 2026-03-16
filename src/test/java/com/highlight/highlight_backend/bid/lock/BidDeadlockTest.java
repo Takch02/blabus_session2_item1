@@ -1,8 +1,12 @@
 package com.highlight.highlight_backend.bid.lock;
 
+import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.auction.service.AdminAuctionService;
+import com.highlight.highlight_backend.bid.application.BidFacade;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.service.BidService;
+import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.dto.UserUpdateRequestDto;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import com.highlight.highlight_backend.user.service.UserService;
@@ -24,12 +28,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class BidDeadlockTest {
 
     @Autowired
-    private BidService bidService;
+    private BidFacade bidFacade;
     @Autowired
     private UserService userService;
 
 
-    private AtomicLong bidPrice = new AtomicLong(110000);
+    private AtomicLong bidPrice = new AtomicLong(1571280000);
+    @Autowired
+    private AdminAuctionService adminAuctionService;
 
     @Test
     @DisplayName("동시성 테스트: 입찰과 유저 수정이 동시에 몰려도 데드락이 안 터져야 한다")
@@ -54,7 +60,7 @@ public class BidDeadlockTest {
                 try {
                     // 짝수 스레드: 입찰 시도 (Auction Lock -> User Update Event)
                     if (index % 2 == 0) {
-                        bidService.createBid(new BidCreateRequestDto(2L, currentPrice, false,
+                        bidFacade.createBidFacade(new BidCreateRequestDto(2L, currentPrice, false,
                                 BigDecimal.valueOf(1100)), 1L);
                     } 
                     // 홀수 스레드: 유저 정보 수정 (User Lock -> Auction Lock)
@@ -67,7 +73,7 @@ public class BidDeadlockTest {
                     if (e.getMessage().contains("입찰가")) {
                         // 이 경우는 스레드 순서 문제이므로 데드락이 아님.
                         System.out.println("스레드 순서 역전으로 인한 입찰 실패(정상): " + e.getMessage());
-                        successCount.getAndIncrement(); // 쓰레드가 꼬이며 비즈니로 로직이 오류는 괜찮음.
+                        successCount.getAndIncrement(); // 쓰레드가 꼬이며 생긴 오류이므로 넘김.
                     } else {
                         // 진짜 데드락이나 시스템 에러만 실패로 간주
                         System.out.println("심각한 에러 발생: " + e.getMessage());

@@ -1,5 +1,6 @@
 package com.highlight.highlight_backend.admin.auction;
 
+import com.highlight.highlight_backend.auction.application.AuctionFacade;
 import com.highlight.highlight_backend.auction.dto.AuctionResponseDto;
 import com.highlight.highlight_backend.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.auction.service.AdminAuctionSearchService;
@@ -24,6 +25,8 @@ public class AuctionCreateService {
     private AdminAuctionService adminAuctionService;
     @Autowired
     private AdminAuctionSearchService AdminAuctionSearchService;
+    @Autowired
+    private AuctionFacade auctionFacade;
 
     /**
      * 상품 id를 이용해 경매 생성 및 조회 테스트
@@ -32,8 +35,8 @@ public class AuctionCreateService {
     void createAuction() {
         AuctionScheduleRequestDto auctionScheduleRequestDto = createAuctionScheduleRequestDto();
 
-        AuctionResponseDto request = adminAuctionService.scheduleAuction(auctionScheduleRequestDto, 1L);
-        AuctionResponseDto dto = AdminAuctionSearchService.getAuction(request.getAuctionId(), 1L);
+        AuctionResponseDto request = auctionFacade.scheduleAuction(auctionScheduleRequestDto, 1L); // 경매 예약
+        AuctionResponseDto dto = AdminAuctionSearchService.getAuction(request.getAuctionId(), 1L);  // 경매 조회
 
         Assertions.assertNotNull(auctionScheduleRequestDto);
         assertThat(dto.getAuctionId()).isEqualTo(request.getAuctionId());

@@ -2,6 +2,7 @@ package com.highlight.highlight_backend.bid.event;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.bid.application.BidFacade;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.service.BidService;
 import com.highlight.highlight_backend.common.outbox.OutboxEvent;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.doThrow;
 public class EventLossWithoutOutboxTest {
 
     @Autowired
-    private BidService bidService;
+    private BidFacade bidFacade;
     @Autowired private UserRepository userRepository;
     @Autowired private AuctionRepository auctionRepository;
 
@@ -51,7 +52,7 @@ public class EventLossWithoutOutboxTest {
         // 1. [Given] 초기 상태
         Long userId = 1L;
         Long auctionId = 2L;
-        BigDecimal bidAmount = BigDecimal.valueOf(164000); // 새로운 입찰가
+        BigDecimal bidAmount = BigDecimal.valueOf(110000); // 새로운 입찰가
 
         User userBefore = userRepository.findById(userId).orElseThrow();
         Long initialCount = userBefore.getParticipationCount();
@@ -63,7 +64,7 @@ public class EventLossWithoutOutboxTest {
 
         // 3. [When] 입찰 시도 (메인 트랜잭션)
         try {
-            bidService.createBid(new BidCreateRequestDto(
+            bidFacade.createBidFacade(new BidCreateRequestDto(
                     auctionId, bidAmount, false, BigDecimal.valueOf(1000)
             ), userId);
         } catch (Exception e) {

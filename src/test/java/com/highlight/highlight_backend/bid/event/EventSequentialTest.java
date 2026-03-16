@@ -1,11 +1,11 @@
 package com.highlight.highlight_backend.bid.event;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.notification.AuctionWebSocketNotifier;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.bid.application.BidFacade;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.listener.BidEventListener;
-import com.highlight.highlight_backend.bid.service.BidNotificationService;
-import com.highlight.highlight_backend.bid.service.BidService;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.doThrow;
 public class EventSequentialTest {
 
     @Autowired
-    private BidService bidService;
+    private BidFacade bidFacade;
 
     @Autowired
     private AuctionRepository auctionRepository;
@@ -39,7 +39,7 @@ public class EventSequentialTest {
     private BidEventListener bidEventListener;
 
     @MockitoSpyBean
-    private BidNotificationService notificationService;
+    private AuctionWebSocketNotifier auctionWebSocketNotifier;
 
     @Test
     @DisplayName("실패 시뮬레이션: 리스너가 실패(서버 다운 등)해도 입찰은 롤백되지 않아 데이터 정합성이 깨진다")
@@ -55,11 +55,11 @@ public class EventSequentialTest {
 
         // 2. 서버가 터진 상황을 알림 서비스 오류로 가정
         doThrow(new RuntimeException("🔥 서버 폭발! 이벤트 증발! 🔥"))
-                .when(notificationService).sendNewBidNotification(any());
+                .when(auctionWebSocketNotifier).sendNewBidNotification(any());
 
         // 3. [When] 입찰 시도 (메인 트랜잭션)
         try {
-            bidService.createBid(new BidCreateRequestDto(
+            bidFacade.createBidFacade(new BidCreateRequestDto(
                     auctionId, BigDecimal.valueOf(test), false, BigDecimal.valueOf(1000)
             ), userId);
         } catch (Exception e) {

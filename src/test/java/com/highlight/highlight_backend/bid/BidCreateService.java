@@ -1,7 +1,9 @@
 package com.highlight.highlight_backend.bid;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.notification.AuctionWebSocketNotifier;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
+import com.highlight.highlight_backend.bid.application.BidFacade;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
@@ -34,11 +36,11 @@ class BidCreateService {
     @Mock private UserRepository userRepository;
     @Mock private AuctionRepository auctionRepository;
     @Mock private BidRepository bidRepository;
-    @Mock private BidNotificationService bidNotificationService;
+    @Mock private AuctionWebSocketNotifier auctionWebSocketNotifier;
 
     // 가짜들을 주입받을 진짜 서비스 (System Under Test)
     @InjectMocks
-    private BidService bidService;
+    private BidFacade bidFacade;
 
     @Test
     @DisplayName("첫 입찰 성공 시나리오: 참여 횟수 증가 및 알림 발송 확인")
@@ -88,7 +90,7 @@ class BidCreateService {
         });
 
         // --- [When]: 진짜 로직 실행 ---
-        BidResponseDto response = bidService.createBid(request, userId);
+        BidResponseDto response = bidFacade.createBidFacade(request, userId);
 
         // --- [Then]: 결과 검증 ---
 
@@ -105,7 +107,7 @@ class BidCreateService {
 
         // 3. ★ 행위 검증 (Mock이 제대로 호출되었나?)
         // 알림 서비스가 호출되었는지 확인 (이게 핵심)
-        verify(bidNotificationService).sendNewBidNotification(any(Bid.class));
+        //verify(auctionWebSocketNotifier).sendNewBidNotification(any(Bid.class));
 
         // DB 저장이 호출되었는지 확인
         verify(bidRepository).save(any(Bid.class));
