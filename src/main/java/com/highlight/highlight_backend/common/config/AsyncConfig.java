@@ -14,7 +14,7 @@ public class AsyncConfig {
     public Executor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);    // 기본 일꾼 10명
-        executor.setMaxPoolSize(30);     // 바빠도 최대 30명까지만 고용
+        executor.setMaxPoolSize(15);     // 바빠도 최대 30명까지만 고용
         executor.setQueueCapacity(100);  // 일꾼이 꽉 차면 100개까지만 대기열에 세움
         executor.setThreadNamePrefix("Async-Worker-"); // 이름도 예쁘게 변경
         

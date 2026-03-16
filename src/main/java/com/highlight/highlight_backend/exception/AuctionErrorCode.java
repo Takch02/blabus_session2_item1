@@ -53,8 +53,8 @@ public enum AuctionErrorCode implements ErrorCode {
     /** 종료된 경매는 수정할 수 없음 */
     CANNOT_MODIFY_ENDED_AUCTION(HttpStatus.BAD_REQUEST, "AUCTION_019", "종료된 경매는 수정할 수 없습니다."),
     /** 락 경합으로 인해 입찰에 참여할 수 없음 **/
-    ALREADY_HAVE_LOCK(HttpStatus.BAD_REQUEST, "AUCTION_020", "현재 입찰자가 너무 많습니다. 5초 후 다시 시도해주세요."),
-    AUCTION_LOCK_INTERRUPT(HttpStatus.BAD_REQUEST, "AUCTION_021", "");
+    ALREADY_HAVE_LOCK(HttpStatus.TOO_MANY_REQUESTS, "AUCTION_020", "현재 접속자가 많아 입찰이 지연되고 있습니다. 잠시 후 다시 시도해주세요."),
+    AUCTION_LOCK_INTERRUPT(HttpStatus.SERVICE_UNAVAILABLE, "AUCTION_021", "서버 종류 or 스레드 풀 강제 종료됨.");
 
     
     private final HttpStatus httpStatus;

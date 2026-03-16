@@ -2,12 +2,10 @@ package com.highlight.highlight_backend.bid.service;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.highlight.highlight_backend.auction.domain.Auction;
-import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.bid.domain.Bid;
 import com.highlight.highlight_backend.bid.dto.AuctionMyResultResponseDto;
 import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.common.outbox.OutboxService;
-import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.bid.dto.BidCreateRequestDto;
 import com.highlight.highlight_backend.bid.dto.BidResponseDto;
@@ -17,8 +15,6 @@ import com.highlight.highlight_backend.exception.BidErrorCode;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,9 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import static com.highlight.highlight_backend.exception.AuctionErrorCode.ALREADY_HAVE_LOCK;
 
 /**
  * 입찰 관련 비즈니스 로직 서비스
@@ -42,7 +35,6 @@ import static com.highlight.highlight_backend.exception.AuctionErrorCode.ALREADY
 @Transactional(readOnly = true)
 public class BidService {
 
-    private final UserAuctionService userAuctionService;
     private final BidRepository bidRepository;
     private final ApplicationEventPublisher eventPublisher;  // spring container 에 넣어주는 인터페이스
     private final OutboxService outboxService;
@@ -82,12 +74,9 @@ public class BidService {
      * 변경 전 lock 순서 : Auction lock -> User lock -> 둘 다 Unlock
      */
     @Transactional
-    public BidResponseDto createBid(BidCreateRequestDto request, User user) {
+    public BidResponseDto createBid(BidCreateRequestDto request, User user, Auction auction) {
 
         log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
-        // 락 없는 일반 조회
-        Auction auction = userAuctionService.getAuctionOrThrow(request.getAuctionId());
-        auction.validateBid(request.getBidAmount());
 
         Bid previousTopBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)
                 .orElse(null);
@@ -102,8 +91,6 @@ public class BidService {
             previousTopBid.outBid();
             previousBidId = previousTopBid.getId();
         }
-
-        // === 락은 풀렸지만 아직 같은 트랜잭션 안 ===
         saveOutBoxAndPublish(
                 user.getId(),
                 auction.getId(),

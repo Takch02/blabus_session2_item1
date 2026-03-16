@@ -40,20 +40,21 @@ public class BidFacade {
 
     public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
         User user = userService.getUserOrThrow(userId);
-
         String lockKey = "LOCK_AUCTION_" + request.getAuctionId();
         RLock lock = redissonClient.getFairLock(lockKey);
 
         try {
             boolean acquired = lock.tryLock(5, 5, TimeUnit.SECONDS);
             if (!acquired) throw new BusinessException(AuctionErrorCode.ALREADY_HAVE_LOCK);  // Lock 대기 예외
+            Auction auction = userAuctionService.getAuctionOrThrow(request.getAuctionId());
+            auction.validateBid(request.getBidAmount());
 
             // 락을 쥔 상태에서, 트랜잭션이 걸린 진짜 서비스 메서드를 호출!
-            return bidService.createBid(request, user);
+            return bidService.createBid(request, user, auction);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Interrupt flag = false 로 깨어나게 되므로 다시 true로 수정
-            throw new BusinessException(AuctionErrorCode.AUCTION_LOCK_INTERRUPT);
+            throw new BusinessException(AuctionErrorCode.AUCTION_LOCK_INTERRUPT);  // 500 에러
         } finally {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock(); // 트랜잭션 커밋이 완벽히 끝난 후 락이 풀림!
