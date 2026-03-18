@@ -2,65 +2,62 @@
 
 > **블레이버스 MVP 해커톤 시즌 2 최우수상 수상작 🏆**
 > 
-> "초기 MVP 개발에 그치지 않고, 실제 대규모 운영 환경을 가정하여 **데이터 정합성 보장**과 **조회 성능 최적화**를 집요하게 파고든 백엔드 리팩토링 프로젝트입니다."
+> "초기 MVP 개발에 그치지 않고, 실제 대규모 운영 환경을 가정하여 **데이터 정합성 보장(Exactly-Once)**과 **조회 성능 및 동시성 최적화**를 집요하게 파고든 백엔드 아키텍처 고도화 프로젝트입니다."
 
 <br>
 
 ## 📌 Project Overview
-- **Phase 1 (해커톤):** 2025.08.12 ~ 2025.08.25 / 5인 팀 (프론트엔드 UI/API 연동 및 백오피스 개발)
-- **Phase 2 (아키텍처 리팩토링):** 2025.11 ~ 2026.01 / 1인 개인 (백엔드 아키텍처 고도화)
-- **기술 블로그 (Trouble Shooting):** [https://velog.io/@takch02/series/리펙토링]
+- **Phase 1 (해커톤):** 2025.08.12 ~ 2025.08.25 / 5인 팀 (백오피스 및 경매 조회 로직 개발, 프론트 인력 이탈 대응으로 UI/API 연동 전담") 
+- **Phase 2 (아키텍처 리팩토링):** 2025.11 ~ 2026.03 / 1인 개인 (백엔드 아키텍처 고도화)
+- **기술 블로그 (Trouble Shooting):** [벨로그 리팩토링 시리즈](https://velog.io/@takch02/series/%EB%A6%AC%ED%8E%99%ED%86%A0%EB%A7%81)
 
 <br>
 
 ## 🛠 Tech Stack
 - **Backend:** Java, Spring Boot, Spring Data JPA, QueryDSL
-- **Database:** MySQL
+- **Database / Cache:** MySQL, Redis (Redisson) 
 - **Infra/Test:** AWS (EC2, RDS, S3), GitHub Actions, K6 (부하 테스트), JUnit5, Mockito
-
-<br>
-
-## 🚀 Key Refactoring Achievements (아키텍처 고도화)
-
-### 1. 300만 건 대용량 경매 데이터 조회 성능 2,300배 개선 (3900ms ➡️ 16ms)
-- **🚨 Problem:** 기존 JPA `findAll()` 및 `OFFSET` 기반 Paging 방식에서 COUNT 쿼리 병목과 Full Scan으로 인해 Connection Pool 고갈 및 높은 응답 지연 발생 (OOM 위험).
-- **💡 Solution:**
-  - **No-Offset (Page Slice) 전환:** 불필요한 COUNT 쿼리 제거로 DB 부하 감소.
-  - **Covering Index 도입:** 인덱스에 포함된 식별자만 선조회하는 Index Only Scan 방식 적용.
-  - **Deferred Join 적용:** 선조회된 식별자를 바탕으로 실제 데이터 건수만큼만 원본 테이블과 Join 하여 데이터 추출.
-- **📊 Result:** K6 부하 테스트 환경에서 조회 응답 속도 **3900ms ➡️ 16ms**로 대폭 단축, 에러율 **12.5% ➡️ 0%** 달성.
-
-### 2. Outbox Pattern 기반 Deadlock 해결 및 100% 데이터 정합성 보장
-- **🚨 Problem:** '입찰 트랜잭션(Auction Lock -> User Lock)'과 '유저 정보 수정 트랜잭션(User Lock -> Auction Lock)'이 서로 다른 순서로 Lock을 획득하면서 **교차 락(Cross Lock)에 의한 Deadlock** 발생.
-- **💡 Solution:**
-  - **이벤트 기반 아키텍처 분리:** `@TransactionalEventListener`를 활용해 유저 업데이트 로직을 비동기 이벤트로 분리하여 Lock 충돌 원천 차단.
-  - **Outbox Pattern 도입:** 메인 트랜잭션 커밋 전, 이벤트를 Outbox 테이블에 먼저 저장하여 메인 로직과 이벤트 발행 간의 원자성(Atomicity) 확보.
-  - **TSID 및 Scheduler 적용:** TSID 기반 인덱싱으로 고속 조회 환경을 구축하고, 스케줄러를 통해 미처리 이벤트를 재전송하여 **결과적 일관성(Eventual Consistency)** 보장.
-- **📊 Result:** Deadlock 이슈 완벽 제거 및 고의적인 이벤트 유실 테스트 환경(Mockito 기반)에서도 100% 재처리 검증 완료.
-
-### 3. MSA 전환을 대비한 도메인 중심 아키텍처(Package by Feature) 재편
-- **🚨 Problem:** 초기 개발 시 계층형 구조(Package by Layer)를 채택하여, 서비스 규모가 커짐에 따라 도메인 간의 결합도가 높아지고(High Coupling) 비즈니스 흐름을 파악하기 어려운 유지보수 한계 직면.
-- **💡 Solution:**
-  - **도메인 중심 패키지 분리:** 기존 `controller/`, `service/`, `repository/` 구조를 `auction/`, `user/`, `bid/` 등 비즈니스 도메인(Feature) 단위로 구조 전면 리팩토링.
-  - **의존성 격리:** 각 도메인이 독립적으로 동작할 수 있도록 패키지 간 순환 참조 및 강결합을 끊어내고 인터페이스 기반으로 통신하도록 개선.
-- **📊 Result:** 도메인 내의 응집도를 높이고 타 도메인과의 결합도를 낮추어 코드 가독성 및 유지보수성을 항샹.
 
 <br>
 
 ## 🏆 Hackathon Achievements (Phase 1)
 **블레이버스 MVP 해커톤 시즌 2 최우수상 수상**
-- 프론트엔드 인력 이탈 위기 상황에서 풀스택 개발로 전향.
-- React 기반 UI 설계부터 백오피스 환경 구축, API 연동까지 기한 내 성공적으로 완수하여 프로젝트 수상을 견인.
+- 프론트엔드 인력 이탈 상황에서 UI/API 연동을 자발적으로 전담하여 팀의 개발 공백을 메움
+- React 기반 UI 설계부터 백오피스 환경 구축, API 연동까지 전체 사이클을 기한 내 성공적으로 완수하여 프로젝트 수상을 견인.
 
 <br>
 
-## 📐 Architecture & Trouble Shooting 상세
+## 🚀 Key Refactoring Achievements (Phase 2)
 
-- **[Trouble Shooting 1]** [Covering Index와 Deferred Join을 통한 성능 개선기](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-5)
-  
-- **[Trouble Shooting 2]** 이벤트 유실 방지와 Deadlock 해결을 위한 Outbox 패턴 도입기
-  <img width="512" height="798" alt="ChatGPT Image 2026년 3월 6일 오후 11_41_59-2" src="https://github.com/user-attachments/assets/31437a81-9f34-4d70-8a27-7f297550e4bd" />
+### 1. Payload-State 역할 분리 기반의 부분 실패 복구 및 Exactly-Once 보장
+- **🚨 Problem:** 입찰 트랜잭션과 User 정보 수정 간 교차 Lock 획득으로 **Deadlock** 발생. 비동기 분리 시 일부 로직만 실패하는 **부분 실패** 위험 및 무거운 이벤트 데이터 중복 저장으로 인한 DB 부하 우려.
+- **💡 Solution:**
+  - **비동기 분리 및 Claim Check 패턴:** 로직을 비동기로 분리해 Lock 충돌을 없애고, 이벤트 본체(Payload)는 `Outbox` 테이블에 단일 저장.
+  - **Consumer Log 도입:** 실행 상태만 추적하는 가벼운 `Consumer Log` 티켓을 동시 발행하고, 수신 측에서 상태를 사전 검증하여 **멱등성 확보**.
+  - **독립적 재처리 파이프라인:** FAILED, Pending상태의 Log만 스케줄러가 추적하여 원본 이벤트를 꺼내 재실행.
+    
+  <img width="932" height="519" alt="스크린샷 2026-03-17 오후 10 25 31" src="https://github.com/user-attachments/assets/8062e628-4599-493f-b0e1-af77c67aa00c" />
 
-   [Deadlock 해결](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-6), [Outbox 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-7)
+- **📊 Result:**
+  - **Deadlock 원천 차단:** **100개 스레드 규모의 동시성 부하 테스트**를 통해 트랜잭션 분리에 따른 **DeadLock 미발생 검증**
+  - **결과적 일관성 100% 증명:** Mockito를 활용해 **비동기 이벤트의 의도적 부분 실패 상황을 재현** 후 Consumer Log 스케줄러의 개입을 통한 **자동 복구 및 멱등성 유지 로직 검증**
+- **블로그:** : [Consumer Log 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-8Consumer-Log-패턴)
 
-<br>
+### 2. Redisson 분산 락 도입을 통한 DB Connection Pool 고갈 해결
+- **🚨 Problem:** 비관적 락(Pessimistic Lock) 기반 입찰 로직이 대기 시간 동안 DB Connection을 계속 점유하여, 단순 경매 조회 등 타 로직까지 마비되는 병목 현상 발생 (조회 1,003ms 지연).
+- **💡 Solution:**
+  - **Redisson Pub/Sub 분산 락:** Lock 관리를 애플리케이션(Redis) 계층으로 분리하여 무의미한 DB Connection 점유 제거.
+  - 스핀 락 방식의 렛투스(Lettuce) 대신 Pub/Sub 기반의 Redisson을 선택하여 레디스 서버의 CPU 부하 최소화.
+    
+  <img width="718" height="347" alt="스크린샷 2026-03-15 오후 11 39 08" src="https://github.com/user-attachments/assets/1c64f903-8a65-4b06-828d-0bbb13394ecc" />
+
+- **📊 Result:**
+  - 트랜잭션과 Lock 획득 순서를 분리하여 단 1개의 Connection으로 입찰 처리.
+  - 통합 부하 테스트(K6) 결과, 조회 응답 **1,003ms ➡️ 44ms (95.6% 개선)** 및 전체 TPS 22% 향상. (Connection Pool 30개, 비동기 Task Pool 15개로 제한하여 운영 환경 자원 제약을 재현한 로컬 환경 기준)
+- **블로그:** [Redisson Distrubution Lock 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-9)
+
+### 3. 300만 건 대용량 데이터 조회 성능 개선 (Covering Index & Deferred Join)
+- **🚨 Problem:** 기존 `findAll()` 및 `OFFSET` 기반 Paging에서 COUNT 쿼리 병목과 Full Scan으로 인한 응답 지연.
+- **💡 Solution:** No-Offset(Page Slice) 전환으로 COUNT 쿼리 제거. 식별자만 선조회하는 **Covering Index**와 실제 필요한 데이터만 원본에서 빼오는 **Deferred Join** 적용.
+- **📊 Result:** 300만 건 더미 데이터 부하 테스트(K6) 기준 조회 응답 **5,115ms ➡️ 31ms (168배 개선)**. (로컬 환경 기준)
+- **블로그:** [Covering Index & Deferred Join으로 성능 개선](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-5)
