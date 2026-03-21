@@ -33,14 +33,12 @@ public class BidDeadlockTest {
     private UserService userService;
 
 
-    private AtomicLong bidPrice = new AtomicLong(1571280000);
-    @Autowired
-    private AdminAuctionService adminAuctionService;
+    private AtomicLong bidPrice = new AtomicLong(120000);
 
     @Test
     @DisplayName("동시성 테스트: 입찰과 유저 수정이 동시에 몰려도 데드락이 안 터져야 한다")
     void deadlockCheck() throws InterruptedException {
-        int numberOfThreads = 10;
+        int numberOfThreads = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
@@ -76,7 +74,7 @@ public class BidDeadlockTest {
                         successCount.getAndIncrement(); // 쓰레드가 꼬이며 생긴 오류이므로 넘김.
                     } else {
                         // 진짜 데드락이나 시스템 에러만 실패로 간주
-                        System.out.println("심각한 에러 발생: " + e.getMessage());
+                        System.out.println("심각한 에러 발생: " + e.getMessage() + ", index : " + index);
                         failCount.getAndIncrement();
                     }
                 } finally {

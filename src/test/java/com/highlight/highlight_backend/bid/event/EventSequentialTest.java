@@ -34,10 +34,6 @@ public class EventSequentialTest {
     @Autowired
     private UserRepository userRepository;
 
-    // [핵심] 리스너를 조작하기 위해 MockBean으로 선언 (혹은 SpyBean)
-    @Autowired
-    private BidEventListener bidEventListener;
-
     @MockitoSpyBean
     private AuctionWebSocketNotifier auctionWebSocketNotifier;
 
@@ -75,7 +71,6 @@ public class EventSequentialTest {
         Auction auction = auctionRepository.findById(auctionId).orElseThrow();
         assertThat(auction.getCurrentHighestBid())
                 .isEqualByComparingTo(BigDecimal.valueOf(test));
-        System.out.println(">>> 입찰은 성공해서 돈은 나갔음.");
 
         // (2) 유저 참여 횟수 탐색
         User userAfter = userRepository.findById(userId).orElseThrow();

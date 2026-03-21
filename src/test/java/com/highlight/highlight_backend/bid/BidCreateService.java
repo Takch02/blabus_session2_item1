@@ -28,7 +28,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-// 1. Mockito 확장팩을 쓴다고 선언 (이게 있어야 @Mock이 동작해)
 @ExtendWith(MockitoExtension.class)
 class BidCreateService {
 
@@ -36,7 +35,6 @@ class BidCreateService {
     @Mock private UserRepository userRepository;
     @Mock private AuctionRepository auctionRepository;
     @Mock private BidRepository bidRepository;
-    @Mock private AuctionWebSocketNotifier auctionWebSocketNotifier;
 
     // 가짜들을 주입받을 진짜 서비스 (System Under Test)
     @InjectMocks
