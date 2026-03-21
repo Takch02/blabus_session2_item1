@@ -10,15 +10,18 @@ import com.highlight.highlight_backend.bid.dto.BidResponseDto;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import com.highlight.highlight_backend.bid.service.BidService;
+import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -26,88 +29,133 @@ import java.util.Optional;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BidCreateService {
 
 
-    @Mock private UserRepository userRepository;
-    @Mock private AuctionRepository auctionRepository;
+    @InjectMocks
+    private BidService bidService;
+
     @Mock private BidRepository bidRepository;
 
-    // 가짜들을 주입받을 진짜 서비스 (System Under Test)
-    @InjectMocks
-    private BidFacade bidFacade;
+    @Mock
+    private OutboxService outboxService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    private User testUser;
+    private Auction testAuction;
+    private BidCreateRequestDto requestDto;
+
+    @BeforeEach
+    void setUp() {
+        // 테스트에 사용할 공통 데이터 세팅 (Given)
+        testUser = createDefaultUser();
+        testAuction = createDefaultAuction(1L, BigDecimal.valueOf(20000));
+        requestDto = new BidCreateRequestDto(1L, BigDecimal.valueOf(30000), false, BigDecimal.valueOf(1000)); // 100번 경매에 5만원 입찰
+    }
 
     @Test
-    @DisplayName("첫 입찰 성공 시나리오: 참여 횟수 증가 및 알림 발송 확인")
-    void createBid_FirstBidder_Success() {
-        // --- [Given]: 상황 설정 (가짜들이 어떻게 행동할지 대본을 짜는 곳) ---
+    @DisplayName("최초 입찰: 이전 입찰자가 없을 경우 정상적으로 입찰이 생성된다.")
+    void createBid_FirstBid() {
+        // 1. 준비 (Given)
+        // 이전 최고 입찰자가 없다고 가정 (Optional.empty 반환)
+        when(bidRepository.findTopByAuctionOrderByBidAmountDesc(testAuction))
+                .thenReturn(Optional.empty());
 
-        Long userId = 1L;
-        Long auctionId = 100L;
-        BigDecimal bidAmount = BigDecimal.valueOf(10000);
+        // 이 유저는 경매에 처음 참여한다고 가정
+        when(bidRepository.existsByAuctionAndUser(testAuction, testUser))
+                .thenReturn(false);
 
-        // 1. 데이터 객체는 Mock 쓰지 말고 진짜(Real)를 써! (제발!)
+        // 저장소에 저장될 가짜 입찰 객체 생성 및 반환 설정
+        Bid savedBid = Bid.builder().id(10L).bidAmount(BigDecimal.valueOf(30000)).user(testUser).auction(testAuction).build();
+        when(bidRepository.save(any(Bid.class))).thenReturn(savedBid);
+
+        // 2. 실행 (When)
+        BidResponseDto response = bidService.createBid(requestDto, testUser, testAuction);
+
+        // 3. 검증 (Then)
+        assertThat(response).isNotNull();
+        assertThat(response.getBidId()).isEqualTo(10L); // 저장된 ID가 잘 반환되었는지 확인
+        assertThat(response.getBidAmount()).isEqualTo(BigDecimal.valueOf(30000)); // 금액 확인
+        assertThat(response.getProductName()).isEqualTo("테스트용 맥북 프로");
+
+        // 데이터베이스 조회 및 저장 메서드가 각각 1번씩 호출되었는지 행위 검증
+        verify(bidRepository, times(1)).findTopByAuctionOrderByBidAmountDesc(testAuction);
+        verify(bidRepository, times(1)).save(any(Bid.class));
+    }
+
+    @Test
+    @DisplayName("기존 입찰 갱신: 이전 입찰자가 있을 경우, 이전 입찰은 유찰 처리되고 새 입찰이 생성된다.")
+    void createBid_UpdateExistingBid() {
+        // 1. 준비 (Given)
+        // 기존 최고 입찰자 생성 (금액: 4만원)
+        User previousUser = prevUser();
+        Bid previousBid = Bid.builder().id(9L).bidAmount(BigDecimal.valueOf(40000)).user(previousUser).auction(testAuction).build();
+
+        // 이전 최고 입찰자가 있다고 가정 (previousBid 반환)
+        when(bidRepository.findTopByAuctionOrderByBidAmountDesc(testAuction))
+                .thenReturn(Optional.of(previousBid));
+
+        // 현재 유저는 경매에 처음 참여한다고 가정
+        when(bidRepository.existsByAuctionAndUser(testAuction, testUser))
+                .thenReturn(false);
+
+        // 새롭게 저장될 가짜 입찰 객체 설정 (금액: 5만원)
+        Bid savedBid = Bid.builder().id(10L).bidAmount(BigDecimal.valueOf(50000)).user(testUser).auction(testAuction).build();
+        when(bidRepository.save(any(Bid.class))).thenReturn(savedBid);
+
+        // 2. 실행 (When)
+        BidResponseDto response = bidService.createBid(requestDto, testUser, testAuction);
+
+        // 3. 검증 (Then)
+        // 응답 객체 검증
+        assertThat(response).isNotNull();
+        assertThat(response.getBidId()).isEqualTo(10L);
+        assertThat(response.getBidAmount()).isEqualTo(BigDecimal.valueOf(50000));
+
+        // ★ 핵심 검증: 기존 입찰 객체의 outBid()가 호출되어 상태가 변경되었는지 확인 ★
+        // (Bid 엔티티 내부에 상태를 나타내는 필드가 Status.OUTBID 라고 가정)
+        assertThat(previousBid.getStatus()).isEqualTo(Bid.BidStatus.OUTBID);
+
+        // 저장 메서드가 1번 호출되었는지 검증
+        verify(bidRepository, times(1)).save(any(Bid.class));
+    }
+
+    private User createDefaultUser() {
         User user = new User();
-        user.setId(userId);
-        user.setNickname("하루노");
+        user.setId(1L);
+        user.setUserId("test");
+        user.setPassword("test");
+        user.setNickname("testUser");
+        return user;
+    }
 
-        Product product = new Product();
-        product.setProductName("테스트상품");
+    private User prevUser() {
+        User user = new User();
+        user.setId(2L);
+        user.setUserId("test2");
+        user.setPassword("test2");
+        user.setNickname("testUser2");
+        return user;
+    }
 
-        Auction auction = new Auction(); // Builder가 없으면 이렇게라도
+    private Auction createDefaultAuction(Long auctionId, BigDecimal highestBid) {
+        Auction auction = new Auction();
         auction.setId(auctionId);
-        auction.setStatus(Auction.AuctionStatus.IN_PROGRESS);
-        auction.setStartPrice(BigDecimal.valueOf(5000));
-        auction.setMinimumBid(BigDecimal.valueOf(1000));
-        auction.setProduct(product);
+        auction.setStatus(Auction.AuctionStatus.IN_PROGRESS); // 경매 진행 중 상태라고 가정
+        auction.setStartPrice(BigDecimal.valueOf(10000)); // 시작가 1만 원
+        auction.setCurrentHighestBid(highestBid); // 파라미터로 받은 현재 최고가
+        auction.setMinimumBid(BigDecimal.valueOf(1000)); // 최소 인상폭 1천 원
+        auction.setMaxBid(BigDecimal.valueOf(50000)); // 최대 인상폭 5만 원
 
-        BidCreateRequestDto request = new BidCreateRequestDto(auctionId, bidAmount, false, null);
+        Product dummyProduct = new Product();
+        dummyProduct.setProductName("테스트용 맥북 프로");
 
-        // 2. Mock 행동 정의 (Stubbing)
-        // "유저 찾아줘" 하면 -> "옛다, 아까 만든 유저"
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-
-        // "경매 찾아줘(Lock)" 하면 -> "옛다, 경매"
-        given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
-
-        // "이전 1등 있어?" -> "아니, 없어 (첫 입찰이야)"
-        given(bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)).willReturn(Optional.empty());
-
-        // "이 사람 신규야?" -> "응 (true)"
-        given(bidRepository.existsByAuctionAndUser(auction, user)).willReturn(false);
-
-        // "저장해줘" -> "저장된 척하고, ID 박힌 Bid 돌려줄게"
-        given(bidRepository.save(any())).willAnswer(invocation -> {
-            Bid bid = invocation.getArgument(0);
-            // setId는 보통 protected라 테스트에선 reflection이나 setter 필요할 수 있음
-            // 여기선 그냥 들어온 객체 그대로 리턴한다고 쳐
-            return bid;
-        });
-
-        // --- [When]: 진짜 로직 실행 ---
-        BidResponseDto response = bidFacade.createBidFacade(request, userId);
-
-        // --- [Then]: 결과 검증 ---
-
-        // 1. 리턴값 검증
-        assertThat(response.getBidAmount()).isEqualTo(bidAmount);
-
-        // 2. ★ 상태 변화 검증 (도메인 로직이 잘 돌았나?)
-        // Auction의 최고가가 갱신되었나?
-        assertThat(auction.getCurrentHighestBid()).isEqualTo(bidAmount);
-        assertThat(auction.getTotalBids()).isEqualTo(1);
-
-        // User의 참여 횟수가 증가했나? (첫 입찰이니까!)
-        assertThat(user.getParticipationCount()).isEqualTo(1);
-
-        // 3. ★ 행위 검증 (Mock이 제대로 호출되었나?)
-        // 알림 서비스가 호출되었는지 확인 (이게 핵심)
-        //verify(auctionWebSocketNotifier).sendNewBidNotification(any(Bid.class));
-
-        // DB 저장이 호출되었는지 확인
-        verify(bidRepository).save(any(Bid.class));
+        auction.setProduct(dummyProduct);
+        return auction;
     }
 }
