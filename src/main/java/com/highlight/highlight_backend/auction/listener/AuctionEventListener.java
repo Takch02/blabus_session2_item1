@@ -25,9 +25,18 @@ public class AuctionEventListener {
     private final AuctionWebSocketNotifier auctionWebSocketNotifier;
     private final EventConsumerLogService eventConsumerLogService;
     private final AuctionRepository auctionRepository;
-    private final OutboxService outboxService;
     private static final String auctionUsernameUpdate = "AUCTION_USERNAME_UPDATE";
     private static final String auctionNotiBoardCast = "AUCTION_NOTI_BOARDCAST";
+
+    /**
+     * UserNickName 저장 이벤트
+     * 동기로 로그를 먼저 저장
+     */
+    @EventListener
+    public void createUserNickNameLog(UserNicknameUpdateEvent event) {
+        log.info("🎫 [동기] 경매 UserNickName 수정 티켓 발급 완료 (EventId={})", event.getOutboxId());
+        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionUsernameUpdate);
+    }
 
     /**
      * Auction의 Nickname 비동기로 수정
@@ -44,12 +53,10 @@ public class AuctionEventListener {
                     event.getUserId(),
                     event.getNickname()
             );
-            log.info("닉네임 변경 반영 완료: 업데이트된 경매 수 = {}", updatedCount);
-
-            outboxService.markPublished(event.getOutboxId());
             eventConsumerLogService.markAsSuccess(event.getOutboxId(), auctionUsernameUpdate);
+            log.info("[비동기] 우승자 닉네임 변경 반영 완료");
         } catch (Exception e) {
-            log.error("닉네임 동기화 중 에러 발생", e);
+            log.error("우승자 닉네임 동기화 중 에러 발생", e);
             eventConsumerLogService.markAsFailed(event.getOutboxId(), auctionUsernameUpdate, e.getMessage());
         }
     }
