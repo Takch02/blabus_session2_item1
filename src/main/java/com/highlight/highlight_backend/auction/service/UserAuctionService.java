@@ -43,7 +43,7 @@ public class UserAuctionService {
     }
 
     public Auction getAuctionOrThrow(Long auctionId) {
-        return auctionRepository.findById(auctionId)
+        return auctionRepository.findByIdWithProduct(auctionId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
     }
 

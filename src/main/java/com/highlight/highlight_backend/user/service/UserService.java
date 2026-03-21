@@ -163,7 +163,7 @@ public class UserService {
         Long outboxId = TsidCreator.getTsid().toLong();
         UserNicknameUpdateEvent event = new UserNicknameUpdateEvent(userId, request.getNickname(), outboxId);
 
-        outboxService.appendEvent(outboxId, "USER_NICKNAME_UPDATE", userId, event);
+        outboxService.appendEvent(outboxId, "USER", userId, event);
         eventListener.publishEvent(event);
 
         return UserDetailResponseDto.from(user);

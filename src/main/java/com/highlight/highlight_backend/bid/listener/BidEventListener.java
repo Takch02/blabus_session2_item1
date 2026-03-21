@@ -57,7 +57,7 @@ public class BidEventListener {
                 }
             }
             eventConsumerLogService.markAsSuccess(event.getOutboxId(), CONSUMER_NAME);
-            log.info("입찰 메시지 전송 시작 : {}", event.getBidId());
+            log.info("[비동기] 입찰 메시지 전송 시작 : {}", event.getBidId());
         } catch (Exception e) {
             log.error("❌ 알림 발송 실패: {}", e.getMessage(), e);
             eventConsumerLogService.markAsFailed(event.getBidId(), CONSUMER_NAME, e.getMessage());

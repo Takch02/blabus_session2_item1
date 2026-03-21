@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,6 +98,13 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
 
 
     /**
+     * 경매 조회 (상품 정보와 함께 JOIN FETCH)
+     * LazyInitializationException 방지를 위해 사용합니다.
+     */
+    @Query("SELECT a FROM Auction a JOIN FETCH a.product WHERE a.id = :auctionId")
+    Optional<Auction> findByIdWithProduct(@Param("auctionId") Long auctionId);
+
+    /**
      * 경매 조회 (비관적 락)
      * 동시 입찰 시 데이터 일관성을 위해 락을 사용합니다.
      * sql : SELECT * FROM auction WHERE id = ? FOR UPDATE; -- UPDATE 가 있으므로 lock이 걸림.
@@ -132,7 +140,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
      */
     Long findAuctionByTotalBids(Long auctionId);
 
-
+    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Auction a SET a.currentWinnerName = :newNickname " +
             "WHERE a.currentWinnerId = :userId AND a.status = 'ACTIVE'")
