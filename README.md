@@ -53,7 +53,7 @@
 
 - **📊 Result:**
   - 트랜잭션과 Lock 획득 순서를 분리하여 단 1개의 Connection으로 입찰 처리.
-  - 통합 부하 테스트(K6) 결과, 조회 응답 **1,003ms ➡️ 44ms (95.6% 개선)** 및 전체 TPS 22% 향상. (Connection Pool 30개, 비동기 Task Pool 15개로 제한하여 운영 환경 자원 제약을 재현한 로컬 환경 기준)
+  - 통합 부하 테스트(K6) 결과, **타 서비스(경매 조회) 응답 9,928ms → 48ms (99.52% 개선), 입찰 응답 10,202ms -> 320ms (96.9% 개선), 전체 TPS 1,102% 향상** (Connection Pool 30개, 비동기 Task Pool 15개로 제한하여 운영 환경 자원 제약을 재현한 로컬 환경 기준)
 - **블로그:** [Redisson Distrubution Lock 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-9)
 
 ### 3. 300만 건 대용량 데이터 조회 성능 개선 (Covering Index & Deferred Join)
