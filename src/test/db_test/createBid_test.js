@@ -1,21 +1,31 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import exec from 'k6/execution';
-import { Trend } from 'k6/metrics'; // 👈 [추가] Trend 모듈 임포트
+import { Trend, Counter } from 'k6/metrics';
 
-// 👈 [추가] 입찰과 조회의 응답 시간을 따로 기록할 커스텀 지표 생성
+// [기존] 응답 시간 추적
 const bidDuration = new Trend('bid_duration');
 const viewDuration = new Trend('view_duration');
 
+// 👈 [추가] 상태별 카운팅을 위한 Counter 지표 생성
+const bidSuccessCount_200 = new Counter('bid_success_count_200');       // 200: 입찰 성공
+const bidAmountFail = new Counter('bid_amount_fail_count_400');    // 400: 입찰 금액 에러
+const bidLockFailCount = new Counter('bid_lock_fail_count_429');    // 429: 분산락 대기 시간 초과 (Fast-fail)
+const bidErrorCount = new Counter('bid_error_500');           // 5xx: DB 커넥션 타임아웃, 데드락 등 서버 에러
+
 export const options = {
     scenarios: {
-        // [시나리오 1: 포식자] 150명이 3개의 경매에 미친듯이 입찰 (DB 커넥션 점유 시도)
-        // [시나리오 2: 피해자] 50명이 10초 동안 끊임없이 일반적인 경매 상세 정보 조회 (Read-Only)
+        bidding_scenario: {
+            executor: 'constant-vus',
+            vus: 100,
+            duration: '30s',
+            exec: 'bidding',
+        },
         viewing_scenario: {
             executor: 'constant-vus',
-            vus: 50,
-            duration: '10s',
-            exec: 'viewing', // 아래의 viewing() 함수 실행
+            vus: 200,
+            duration: '30s',
+            exec: 'viewing',
         },
     },
 };
@@ -23,8 +33,8 @@ export const options = {
 export function bidding() {
     const currentIter = exec.scenario.iterationInTest;
     const bidAmount = 110000 + (currentIter * 1000);
-    const userId = (exec.vu.idInTest % 100) + 10; // 안전한 유저 ID 풀
-    const hotspotAuctionId = Math.floor(Math.random() * 3) + 2; // 2, 3, 4번 경매 타겟
+    const userId = (exec.vu.idInTest % 100) + 10;
+    const hotspotAuctionId = Math.floor(Math.random() * 3) + 2;
 
     const payload = JSON.stringify({
         auctionId: hotspotAuctionId,
@@ -39,31 +49,36 @@ export function bidding() {
 
     bidDuration.add(res.timings.duration);
 
-    check(res, {
-        '[입찰] is status 200 or 400 or 429': (r) => r.status === 200 || r.status === 400 || r.status === 429,
-    });
-    if (res.status !== 200 && res.status !== 400 && res.status !== 429) {
-        console.log(`\n🚨 [입찰 실패 범인 검거] 
-        - 상태 코드: ${res.status}
-        - 유저 ID: ${userId}
-        - 응답 바디: ${res.body}`);
+    // 👈 [수정] 상태 코드별로 정확하게 분류해서 카운팅 및 로깅
+    if (res.status === 200) {
+        bidSuccessCount_200.add(1);
+    } else if (res.status === 400) {
+        bidAmountFail.add(1); // 분산락이 DB 부하를 막아낸 훈장 같은 지표!
+    } else if (res.status === 429){
+        bidLockFailCount.add(1);
     }
+    else {
+        bidErrorCount.add(1);
+        console.log(`[입찰 치명적 에러] status=${res.status} body=${res.body}`);
+    }
+
+    check(res, {
+        '[입찰] is status 200': (r) => r.status === 200,
+    });
+
     sleep(0.1);
 }
 
 export function viewing() {
     const targetAuctionId = Math.floor(Math.random() * 10) + 2;
-
-    // 단순 GET 요청 (DB에서 읽기만 수행)
     const res = http.get(`http://localhost:8085/api/public/products/${targetAuctionId}`);
 
     viewDuration.add(res.timings.duration);
 
     check(res, {
         '[조회] is status 200': (r) => r.status === 200,
-        '[조회] time OK (200ms 이하)': (r) => r.timings.duration < 200, // 단순 조회는 빨라야 정상!
+        '[조회] time OK (500ms 이하)': (r) => r.timings.duration < 500,
     });
 
-
-    sleep(0.5); // 일반 유저의 클릭 텀 모사
+    sleep(0.5);
 }

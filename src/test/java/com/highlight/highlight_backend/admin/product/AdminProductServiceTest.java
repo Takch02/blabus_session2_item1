@@ -29,8 +29,8 @@ class AdminProductServiceTest {
     @Test
     @DisplayName("상품을 등록하면 목록 조회 시 조회되어야 한다")
     void createAndFindProduct() {
-        // given (준비): 테스트용 데이터 생성
-        Long adminId = 1L; // DB에 존재하는 관리자 ID여야 함 (아니면 @BeforeEach로 미리 넣던가)
+
+        Long adminId = 1L;
         ProductCreateRequestDto request = createDummyDto();
 
         // when (실행): 실제 서비스 메서드 호출
@@ -48,7 +48,7 @@ class AdminProductServiceTest {
         assertThat(productList.getContent()).isNotEmpty();
         assertThat(productList.getContent().get(0).getProductName()).isEqualTo("하루노가 지켜보고 있다");
 
-        // N+1 잡았는지 확인 (이미지 리스트가 잘 들어있는지)
+        // N+1 잡았는지 확인
         assertThat(productList.getContent().get(0).getImages()).isNotNull();
     }
 
@@ -71,14 +71,14 @@ class AdminProductServiceTest {
                 .expectedEffects("기분 전환")
                 .detailedInfo("아주 상세한 정보입니다.")
                 .isPremium(true)
-                .category(Product.Category.FURNITURE) // TODO: 네 Enum 값으로 변경해 (CLOTHES, ELECTRONICS 등)
+                .category(Product.Category.FURNITURE)
                 .productCount(1L)
                 .material("Wood")
                 .size("L")
                 .brand("Highlight")
                 .manufactureYear(2024)
                 .condition("New")
-                .rank(Product.ProductRank.BEST) // TODO: 네 Enum 값으로 변경해 (A, S, B 등)
+                .rank(Product.ProductRank.BEST)
                 .images(List.of(imageDto))
                 .isDraft(false)
                 .build();
