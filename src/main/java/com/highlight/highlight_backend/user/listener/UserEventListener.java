@@ -5,7 +5,6 @@ import com.highlight.highlight_backend.common.logEvent.EventConsumerLogService;
 import com.highlight.highlight_backend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -22,16 +21,6 @@ public class UserEventListener {
     private final UserService userService;
     private final EventConsumerLogService eventConsumerLogService;
     private static final String CONSUMER_NAME = "USER_PARTICIPATION_UPDATE";
-
-    /**
-     * 입찰 트렌젝션과 묶여서 실행됨.
-     * 로그를 저장하여 이벤트 유실 시 스케줄러가 나중에 실행시킴.
-     */
-    @EventListener
-    public void preRegisterLog(BidCreatedEvent event) {
-        eventConsumerLogService.preRegisterLog(event.getOutboxId(), CONSUMER_NAME);
-        log.info("🎫 [동기] 유저 업데이트 대기표 발급 완료 (EventId={})", event.getOutboxId());
-    }
 
     /**
      * userParticipationCount++ 로직은 비동기로 실행 (DeadLock 회피)

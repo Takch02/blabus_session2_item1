@@ -24,5 +24,11 @@ public interface EventConsumerLogRepository extends JpaRepository<EventConsumerL
     @Query("UPDATE EventConsumerLog e SET e.updatedAt = :time WHERE e.id = :id")
     void forceUpdateUpdatedAt(@Param("id") Long id, @Param("time") LocalDateTime time);
 
-    boolean existsByEventIdAndConsumerName(Long eventId, String consumerName);
+
+    @Query("SELECT ecl.consumerName FROM EventConsumerLog ecl " +
+            "WHERE ecl.eventId = :eventId AND ecl.consumerName IN :consumerNames")
+    List<String> findExistingConsumerNames(
+            @Param("eventId") Long eventId,
+            @Param("consumerNames") List<String> consumerNames
+    );
 }

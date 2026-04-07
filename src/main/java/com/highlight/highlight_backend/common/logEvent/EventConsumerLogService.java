@@ -2,10 +2,12 @@ package com.highlight.highlight_backend.common.logEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,12 +18,39 @@ import java.util.stream.Collectors;
 public class EventConsumerLogService {
 
     private final EventConsumerLogRepository eventConsumerLogRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Transactional(propagation = Propagation.REQUIRED) // 메인 트랜잭션에 합류
-    public void preRegisterLog(Long eventId, String consumerName) {
-        if (!eventConsumerLogRepository.existsByEventIdAndConsumerName(eventId, consumerName)) {
-            eventConsumerLogRepository.save(new EventConsumerLog(eventId, consumerName));
+    public void preRegisterLogs(Long eventId, List<String> consumerNames) {
+        List<String> existing = eventConsumerLogRepository
+                .findExistingConsumerNames(eventId, consumerNames);
+
+        List<EventConsumerLog> logs = consumerNames.stream()
+                .filter(name -> !existing.contains(name))
+                .map(name -> new EventConsumerLog(eventId, name))
+                .toList();
+
+        if (!logs.isEmpty()) {
+            bulkInsert(logs);
         }
+    }
+
+    public void bulkInsert(List<EventConsumerLog> logs) {
+        String sql = "INSERT INTO event_consumer_log " +
+                "(event_id, consumer_name, status, retry_count, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
+
+        LocalDateTime now = LocalDateTime.now();
+
+        jdbcTemplate.batchUpdate(sql, logs, logs.size(),
+                (ps, log) -> {
+                    ps.setLong(1, log.getEventId());
+                    ps.setString(2, log.getConsumerName());
+                    ps.setString(3, "PENDING");
+                    ps.setInt(4, 0);
+                    ps.setTimestamp(5, Timestamp.valueOf(now));
+                    ps.setTimestamp(6, Timestamp.valueOf(now));
+                }
+        );
     }
 
     /**

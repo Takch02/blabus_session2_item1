@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * User 회원가입, 로그인 기능 // 휴대폰 SMS 인증 포함
@@ -163,7 +164,7 @@ public class UserService {
         Long outboxId = TsidCreator.getTsid().toLong();
         UserNicknameUpdateEvent event = new UserNicknameUpdateEvent(userId, request.getNickname(), outboxId);
 
-        outboxService.appendEvent(outboxId, "USER", userId, event);
+        outboxService.appendEvent(outboxId, "USER", userId, event, List.of("AUCTION_USERNAME_UPDATE"));
         eventListener.publishEvent(event);
 
         return UserDetailResponseDto.from(user);

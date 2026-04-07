@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -75,7 +76,6 @@ public class BidService {
      */
     @Transactional
     public BidResponseDto createBid(BidCreateRequestDto request, User user, Auction auction) {
-
         log.info("입찰 참여 요청: 사용자={}, 경매={}, 금액={}", user.getId(), request.getAuctionId(), request.getBidAmount());
 
         Bid previousTopBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction)
@@ -98,29 +98,35 @@ public class BidService {
                 savedBid.getBidAmount(),
                 previousBidId,
                 isNewBidder,
-                user.getNickname()
+                user.getNickname(),
+                auction.getTotalBidders(),
+                auction.getTotalBids()
         );
 
         log.info("입찰 참여 완료: 입찰ID={}, 사용자={}, 금액={}", savedBid.getId(), user.getId(), request.getBidAmount());
         return BidResponseDto.fromMyBid(savedBid);
     }
 
-    private void saveOutBoxAndPublish(Long userId, Long auctionId, Long bidId, BigDecimal bidAmount, Long previousBidId, boolean isNewBidder, String userNickname) {
+
+    private void saveOutBoxAndPublish(Long userId, Long auctionId, Long bidId, BigDecimal bidAmount,
+                                      Long previousBidId, boolean isNewBidder, String userNickname,
+                                      Long totalBidders, Long totalBids) {
 
         // 1. Outbox ID 생성
         long outboxId = TsidCreator.getTsid().toLong();
 
         // 2. 모든 도메인(유저, 경매, 알림)이 필요로 하는 정보를 모두 담은 '단일 이벤트' 생성
         BidCreatedEvent bidCreatedEvent = new BidCreatedEvent(
-                outboxId, userId, auctionId, bidId, previousBidId, bidAmount, isNewBidder, userNickname
+                outboxId, userId, auctionId, bidId, previousBidId, bidAmount, isNewBidder, userNickname, totalBidders, totalBids
         );
 
-        // 3. 이벤트 주체는 BID
+        List<String> consumerNames = List.of("AUCTION_NOTI_BOARDCAST", "USER_PARTICIPATION_UPDATE", "BID_NOTI");
+
         outboxService.appendEvent(
                 outboxId,
                 "BID",     // aggregateType: 이벤트 발생 주체 도메인
                 bidId,     // aggregateId: 발생 주체의 식별자
-                bidCreatedEvent
+                bidCreatedEvent, consumerNames
         );
 
         // 4. 이벤트 발행

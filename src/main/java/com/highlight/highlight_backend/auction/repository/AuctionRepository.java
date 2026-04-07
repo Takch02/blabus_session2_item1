@@ -3,6 +3,7 @@ package com.highlight.highlight_backend.auction.repository;
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
 import com.highlight.highlight_backend.exception.BusinessException;
+import com.highlight.highlight_backend.product.domian.Product;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +27,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
      * 없다면 예외를 던짐
      */
     default Auction getOrThrow(Long id) {
-        return findById(id)
+        return findByIdWithProduct(id)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
     }
 
@@ -110,7 +111,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
      * sql : SELECT * FROM auction WHERE id = ? FOR UPDATE; -- UPDATE 가 있으므로 lock이 걸림.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Auction a WHERE a.id = :auctionId")
+    @Query("SELECT a FROM Auction a JOIN FETCH a.product WHERE a.id = :auctionId")
     Optional<Auction> findByIdWithLock(@Param("auctionId") Long auctionId);
 
 
@@ -128,21 +129,29 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, Auction
             "AND a.product.isPremium = true")
     List<Long> findPremiumProductIdsByUserId(@Param("userId") Long userId);
 
-    /**
-     * auction 에 참여한 전체 사용자를 조회
-     */
-    Long findAuctionByTotalBidders(Long auctionId);
+
+    @Query("SELECT a.totalBidders FROM Auction a WHERE a.id = :auctionId")
+    Long findTotalBiddersByAuctionId(@Param("auctionId") Long auctionId);
 
     /**
      *
      * @param auctionId
      * @return
      */
-    Long findAuctionByTotalBids(Long auctionId);
+    @Query("SELECT a.totalBids FROM Auction a WHERE a.id = :auctionId")
+    Long findTotalBidsByAuctionId(@Param("auctionId") Long auctionId);
 
     @Transactional
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Auction a SET a.currentWinnerName = :newNickname " +
             "WHERE a.currentWinnerId = :userId AND a.status = 'ACTIVE'")
     int updateWinnerNameByWinnerId(@Param("userId") Long userId, @Param("newNickname") String newNickname);
+
+
+    long countByStatusAndCategory(Auction.AuctionStatus auctionStatus, Product.Category category);
+
+    long countByStatus(Auction.AuctionStatus auctionStatus);
+
+    @Query("SELECT COUNT(*) FROM Auction")
+    long getCount();
 }

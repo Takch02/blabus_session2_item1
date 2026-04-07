@@ -1,6 +1,5 @@
 package com.highlight.highlight_backend.auction.notification;
 
-import com.highlight.highlight_backend.auction.dto.AuctionStatsDto;
 import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.auction.dto.AuctionNewBidBroadcastDto;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AuctionWebSocketNotifier {
 
-    private final UserAuctionService userAuctionService;
     private final GlobalSocketService globalSocketService;
 
     /**
@@ -27,17 +25,13 @@ public class AuctionWebSocketNotifier {
         log.info("WebSocket - 새 입찰 알림 전송: 경매={}, 입찰자={}, 금액={}",
                 auctionId, event.getUserNickname(), event.getBidAmount());
 
-        // 1. Auction 도메인 통계만 조회 (이건 내 도메인이니까 OK)
-        AuctionStatsDto stats = userAuctionService.getAuctionStats(auctionId);
-
-        // 2. WebSocket 메시지 데이터 생성
-        // (이제 from 메서드에 Bid 엔티티 대신 event 객체의 데이터를 넘깁니다)
+        // WebSocket 메시지 데이터 생성
         AuctionNewBidBroadcastDto bidData = AuctionNewBidBroadcastDto.fromEvent(
                 event.getBidId(),
                 event.getBidAmount(),
                 event.getUserNickname(),
-                stats.getTotalBidders(),
-                stats.getTotalBids()
+                event.getTotalBidders(),
+                event.getTotalBids()
         );
 
         WebSocketMessageDto message = WebSocketMessageDto.of(

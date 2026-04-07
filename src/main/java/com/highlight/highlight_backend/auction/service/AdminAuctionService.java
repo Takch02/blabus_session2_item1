@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+import static com.highlight.highlight_backend.auction.domain.Auction.AuctionStatus.*;
+
 /**
  * 관리자 경매 관리 서비스 (내부 로직 위주)
  *
@@ -31,6 +33,7 @@ public class AdminAuctionService {
     private final AuctionRepository auctionRepository;
     private final AuctionSchedulerService auctionSchedulerService;
     private final AuctionValidator auctionValidator;
+    private final AuctionCountService auctionCountService;
 
     /**
      * 경매 엔티티 생성 및 저장 (내부용)
@@ -52,6 +55,9 @@ public class AdminAuctionService {
         // 4. 경매 엔티티 생성
         Auction auction = new Auction();
         auction.addDetail(product, adminId, kstStartTime, kstEndTime, request);
+
+        // 5. Redis에 Page Count 정보 넣기
+        auctionCountService.transition(null, Auction.AuctionStatus.SCHEDULED, product.getCategory());
         
         log.info("경매 생성 성공 : {}", product.getProductName());
         return auctionRepository.save(auction);
@@ -81,6 +87,7 @@ public class AdminAuctionService {
             auction.startAuction(adminId);
         }
 
+        auctionCountService.transition(SCHEDULED, IN_PROGRESS, auction.getProduct().getCategory());
         return auction;
     }
 
@@ -93,6 +100,8 @@ public class AdminAuctionService {
         auctionValidator.validateAuctionEnd(auction);
         auctionSchedulerService.cancelScheduledStart(auctionId);
         auction.cancelAuction(adminId, "관리자 강제 중단");
+
+        auctionCountService.transition(IN_PROGRESS, CANCELLED, auction.getProduct().getCategory());
         return auction;
     }
 
@@ -105,6 +114,8 @@ public class AdminAuctionService {
         auctionValidator.validateAuctionEnd(auction);
         auctionSchedulerService.cancelScheduledStart(auctionId);
         auction.endAuction(adminId, endReason);
+
+        auctionCountService.transition(IN_PROGRESS, COMPLETED, auction.getProduct().getCategory());
         return auction;
     }
 

@@ -37,19 +37,17 @@ public class BidFacade {
      * 입찰 생성 UseCase
      * 트랜잭션을 여기서 시작하여, 락 획득부터 입찰 저장까지 하나의 작업 단위로 묶음
      */
-
+    //@Transactional
     public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
         User user = userService.getUserOrThrow(userId);
         String lockKey = "LOCK_AUCTION_" + request.getAuctionId();
-        RLock lock = redissonClient.getFairLock(lockKey);
+        RLock lock = redissonClient.getLock(lockKey);
 
         try {
-            boolean acquired = lock.tryLock(5, 5, TimeUnit.SECONDS);
+            boolean acquired = lock.tryLock(500, TimeUnit.MILLISECONDS);
             if (!acquired) throw new BusinessException(AuctionErrorCode.ALREADY_HAVE_LOCK);  // Lock 대기 예외
             Auction auction = userAuctionService.getAuctionOrThrow(request.getAuctionId());
             auction.validateBid(request.getBidAmount());
-
-            // 락을 쥔 상태에서, 트랜잭션이 걸린 진짜 서비스 메서드를 호출!
             return bidService.createBid(request, user, auction);
 
         } catch (InterruptedException e) {
@@ -60,6 +58,10 @@ public class BidFacade {
                 lock.unlock(); // 트랜잭션 커밋이 완벽히 끝난 후 락이 풀림!
             }
         }
+        /*User user = userService.getUserOrThrow(userId);
+        Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
+        auction.validateBid(request.getBidAmount());
+        return bidService.createBid(request, user, auction);*/
     }
 
     /**

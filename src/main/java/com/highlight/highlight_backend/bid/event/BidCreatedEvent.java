@@ -16,4 +16,6 @@ public class BidCreatedEvent {
     private BigDecimal bidAmount;
     private boolean isNewBidder;
     private String userNickname;
+    private Long totalBidders;
+    private Long totalBids;
 }

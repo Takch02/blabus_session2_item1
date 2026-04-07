@@ -5,15 +5,11 @@ import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.bid.repository.BidRepository;
 import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import com.highlight.highlight_backend.common.logEvent.EventConsumerLogService;
-import com.highlight.highlight_backend.common.outbox.OutboxService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -29,18 +25,12 @@ public class BidEventListener {
     private final EventConsumerLogService eventConsumerLogService;
     private static final String CONSUMER_NAME = "BID_NOTI";
 
-
-    @EventListener
-    public void createLogEvent(BidCreatedEvent event) {
-        eventConsumerLogService.preRegisterLog(event.getOutboxId(), CONSUMER_NAME);
-    }
     /**
      * 입찰 성공 후 실행되는 알림 로직 (비동기)
      * 메인 트랜잭션(Lock)과 완전히 분리되어 실행됨
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW) // 새로운 트랜잭션에서 안전하게 조회
     public void handleBidNotification(BidCreatedEvent event) {
 
         log.info("🔔 알림 이벤트 수신: AuctionId={}", event.getAuctionId());

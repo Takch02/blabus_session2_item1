@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+
 public class AuctionStartRequestDto {
     
     /**
@@ -29,4 +30,9 @@ public class AuctionStartRequestDto {
      * 경매 종료 시간 (immediateStart가 false일 때 사용)
      */
     private LocalDateTime scheduledEndTime;
+
+    public AuctionStartRequestDto(LocalDateTime scheduledStartTime, LocalDateTime scheduledEndTime) {
+        this.scheduledStartTime = scheduledStartTime;
+        this.scheduledEndTime = scheduledEndTime;
+    }
 }

@@ -43,7 +43,7 @@ GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
-        log.warn("Business exception occurred: {}", e.getMessage());
+        log.error("Business exception occurred: {}", e.getMessage());
         
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(e.getErrorCode().getCode())

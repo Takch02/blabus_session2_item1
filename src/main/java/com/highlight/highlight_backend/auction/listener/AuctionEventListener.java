@@ -5,15 +5,12 @@ import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.auction.notification.AuctionWebSocketNotifier;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.common.logEvent.EventConsumerLogService;
-import com.highlight.highlight_backend.common.outbox.OutboxService;
 import com.highlight.highlight_backend.user.dto.UserNicknameUpdateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -29,16 +26,6 @@ public class AuctionEventListener {
     private static final String auctionNotiBoardCast = "AUCTION_NOTI_BOARDCAST";
 
     /**
-     * UserNickName 저장 이벤트
-     * 동기로 로그를 먼저 저장
-     */
-    @EventListener
-    public void createUserNickNameLog(UserNicknameUpdateEvent event) {
-        log.info("🎫 [동기] 경매 UserNickName 수정 티켓 발급 완료 (EventId={})", event.getOutboxId());
-        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionUsernameUpdate);
-    }
-
-    /**
      * Auction의 Nickname 비동기로 수정
      */
     @Async
@@ -49,7 +36,7 @@ public class AuctionEventListener {
         }
 
         try {
-            int updatedCount = auctionRepository.updateWinnerNameByWinnerId(
+            auctionRepository.updateWinnerNameByWinnerId(
                     event.getUserId(),
                     event.getNickname()
             );
@@ -81,19 +68,9 @@ public class AuctionEventListener {
                     event.isNewBidder()
             );
 
-            auctionRepository.save(auction);
-
         } catch (Exception e) {
             log.error("경매 최고가 갱신 실패. 배치 재시도 대상이 됩니다. auctionId={}", event.getAuctionId(), e);
         }
-    }
-
-    @EventListener
-    public void createLogEvent(BidCreatedEvent event) {
-        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionUsernameUpdate);
-        eventConsumerLogService.preRegisterLog(event.getOutboxId(), auctionNotiBoardCast);
-        log.info("🎫 [동기] 경매 유저 nickname 업데이트 대기표 발급 완료 (EventId={})", event.getOutboxId());
-        log.info("🎫 [동기] 경매 websocket 발송 대기표 발급 완료 (EventId={})", event.getOutboxId());
     }
 
     /**

@@ -4,8 +4,10 @@ import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.bid.service.BidService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,22 +26,26 @@ import java.util.concurrent.ScheduledFuture;
 @RequiredArgsConstructor
 public class AuctionSchedulerService {
 
+    @Qualifier("taskScheduler")
     private final TaskScheduler taskScheduler;
 
     private final BidService bidService;
-    private final AuctionRepository auctionRepository;
-
     private final AuctionNotificationService auctionNotificationService;
+    private final AuctionCountService auctionCountService;
+    private final AuctionStartService auctionStartService;
+
+    private final AuctionRepository auctionRepository;
 
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
     public void scheduleAuctionStart(Auction auction) {
         cancelScheduledStart(auction.getId()); // 기존 작업이 있다면 취소
 
-        Instant startTime = auction.getScheduledStartTime().atZone(java.time.ZoneId.systemDefault()).toInstant();
+        Instant startTime = auction.getScheduledStartTime().atZone(ZoneId.systemDefault()).toInstant();
         
         Runnable task = () -> {
-            startAuction(auction.getId());
+            auctionStartService.startAuction(auction.getId());
+            scheduledTasks.remove(auction.getId());
         };
 
         ScheduledFuture<?> scheduledTask = taskScheduler.schedule(task, startTime);
@@ -55,24 +62,23 @@ public class AuctionSchedulerService {
         }
     }
 
-    @Transactional
-    public void startAuction(Long auctionId) {
-        Auction auction = auctionRepository.getOrThrow(auctionId);
-        if (auction != null && auction.getStatus() == Auction.AuctionStatus.SCHEDULED) {
-            // 경매 상태를 IN_PROGRESS로 변경
-            auction.setStatus(Auction.AuctionStatus.IN_PROGRESS);
-            
-            // 상품 상태를 IN_AUCTION으로 변경 (Product를 별도로 조회)
-            if (auction.getProduct() != null) {
-                auction.getProduct().setStatus(Product.ProductStatus.IN_AUCTION);
-                log.info("상품 상태가 IN_AUCTION으로 변경되었습니다. 상품 ID: {}", auction.getProduct().getId());
-                auctionNotificationService.sendAuctionStartedNotification(auction);
+    @PostConstruct
+    public void restoreScheduledAuctions() {
+        List<Auction> scheduledAuctions = auctionRepository
+                .findByStatus(Auction.AuctionStatus.SCHEDULED);
+
+        for (Auction auction : scheduledAuctions) {
+            if (auction.getScheduledStartTime().isAfter(LocalDateTime.now())) {
+                scheduleAuctionStart(auction);  // 재등록
+                log.info("경매 재스케줄 완료. ID: {}", auction.getId());
             }
         }
-
-        log.info("스케줄된 경매가 시작되었습니다. 경매 ID: {}, 상품 상태 변경: IN_AUCTION", auctionId);
-        scheduledTasks.remove(auctionId);
     }
+
+    /**
+     * 경매가 스케줄
+     */
+
 
 
     @Scheduled(fixedRate = 60000) // 1분마다 실행
@@ -84,7 +90,8 @@ public class AuctionSchedulerService {
         if (!missedAuctions.isEmpty()) {
             log.info("{}개의 놓친 경매를 발견했습니다. 지금 시작합니다.", missedAuctions.size());
             for (Auction auction : missedAuctions) {
-                startAuction(auction.getId());
+                auctionStartService.startAuction(auction.getId());
+                scheduledTasks.remove(auction.getId());
             }
         }
     }
@@ -92,27 +99,22 @@ public class AuctionSchedulerService {
     @Scheduled(fixedRate = 60000) // 1분마다 실행
     @Transactional
     public void checkExpiredAuctions() {
-        log.debug("종료된 경매가 있는지 확인합니다...");
         List<Auction> expiredAuctions = auctionRepository.findInProgressAuctionsReadyToEnd(LocalDateTime.now());
         for (Auction auction : expiredAuctions) {
-            try {
-                // 경매 상태를 COMPLETED로 변경
-                auction.endAuction(1L,"경매 시간 만료로 인한 자동 종료");
 
-                if (auction.getProduct() != null) {
-                    auction.getProduct().setStatus(Product.ProductStatus.AUCTION_COMPLETED);
-                }
-                // 낙찰자 찾기
-                var winnerBid = bidService.findCurrentHighestBid(auction).orElse(null);
-                if (winnerBid != null) {
-                    auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
-                }
+            Product.Category category = auction.getProduct().getCategory();
 
-                log.info("경매가 자동으로 종료되었습니다. 경매 ID: {}", auction.getId());
-            } catch (Exception e) {
-                log.error("경매 자동 종료 중 오류 발생. 경매 ID: {}, 오류: {}", auction.getId(), e.getMessage(), e);
+            // In_Progress count 감소
+            auctionCountService.decrement(Auction.AuctionStatus.IN_PROGRESS, category);
+
+            // 낙찰자 찾기
+            var winnerBid = bidService.findCurrentHighestBid(auction).orElse(null);
+            if (winnerBid != null) {
+                auctionNotificationService.notifyAuctionEnded(auction, winnerBid.getUser().getNickname());
             }
-        }
 
+            log.info("경매가 자동으로 종료되었습니다. 경매 ID: {}", auction.getId());
+        }
     }
+
 }

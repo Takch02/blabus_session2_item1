@@ -1,12 +1,12 @@
 package com.highlight.highlight_backend.auction.controller;
 
 import com.highlight.highlight_backend.auction.application.AuctionFacade;
+import com.highlight.highlight_backend.auction.dto.AuctionPageResponse;
 import com.highlight.highlight_backend.auction.dto.BuyItNowRequestDto;
 import com.highlight.highlight_backend.auction.dto.BuyItNowResponseDto;
 import com.highlight.highlight_backend.auction.service.UserAuctionService;
 import com.highlight.highlight_backend.common.config.ResponseDto;
 import com.highlight.highlight_backend.auction.dto.AuctionSearchConditionDto;
-import com.highlight.highlight_backend.product.dto.UserAuctionResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,7 +19,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +58,7 @@ public class UserAuctionController {
             @ApiResponse(responseCode = "400", description = "잘못된 검색 파라미터"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResponseEntity<ResponseDto<Slice<UserAuctionResponseDto>>> home (
+    public ResponseEntity<ResponseDto<AuctionPageResponse>> home (
             @Parameter(description = "카테고리 필터 (PROPS, FURNITURE, HOME_APPLIANCES, SCULPTURE, FASHION, CERAMICS, PAINTING)")
             @RequestParam(required = false) String category,
             @Parameter(description = "최소 가격 (원)")
@@ -78,7 +77,7 @@ public class UserAuctionController {
         log.info("GET /api/public/auctions - 경매 목록 조회 요청 (비로그인 사용자도 접근 가능)");
         AuctionSearchConditionDto auctionSearchConditionDto = new AuctionSearchConditionDto(category, brand,
                  minPrice, maxPrice, isPremium, status);
-        Slice<UserAuctionResponseDto> response = userAuctionService.getProductsFiltered(
+        AuctionPageResponse response = userAuctionService.getProductsFiltered(
                 auctionSearchConditionDto, pageable);
 
         return ResponseEntity.ok(

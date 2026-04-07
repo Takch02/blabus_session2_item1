@@ -31,6 +31,7 @@ public class AuctionFacade {
     private final AdminAuthService adminAuthService;
     private final AuctionValidator auctionValidator;
 
+
     /**
      * 경매 예약 UseCase
      */
@@ -114,9 +115,9 @@ public class AuctionFacade {
         Auction auction = adminAuctionService.getAuctionOrThrow(auctionId);
         auctionValidator.validateBuyItNowEligibility(auction);
 
-        // 즉시구매 입찰 생성 및 낙찰 처리 (엔티티 직접 조작 대신 Service 메서드 호출)
+        // 즉시구매 입찰 생성 및 낙찰 처리
         Bid buyItNowBid = bidService.createBuyItNowBid(auction, user);
-        bidService.setBidAsWon(buyItNowBid); // 명확한 행위 지시 (서비스에서 처리)
+        bidService.setBidAsWon(buyItNowBid);
 
         adminAuctionService.endAuctionInternal(auctionId, null, "즉시구매로 인한 경매 종료");
         adminProductService.updateProductStatus(auction.getProduct().getId(), Product.ProductStatus.AUCTION_COMPLETED);

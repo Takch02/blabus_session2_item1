@@ -7,6 +7,7 @@ import com.highlight.highlight_backend.exception.CommonErrorCode;
 import com.highlight.highlight_backend.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -92,6 +93,7 @@ public class AuctionNotificationService {
      *
      * @param auction 시작된 경매
      */
+    @Async
     public void sendAuctionStartedNotification(Auction auction) {
         Long auctionId = auction.getId();
         // log.info("WebSocket - 경매 시작 알림 전송: 경매={}", auctionId);
@@ -108,7 +110,6 @@ public class AuctionNotificationService {
         // 전체 경매 목록 구독자에게도 알림
         globalSocketService.sendToTopic("/topic/auctions", message);
 
-        // log.info("WebSocket - 경매 시작 알림 전송 완료");
     }
 
     /**

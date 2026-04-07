@@ -5,7 +5,6 @@ import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.service.BidNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +44,8 @@ public class AuctionCountdownService {
                     log.info("경매 종료 시간 도달: 경매ID={}", auction.getId());
                     continue; // 종료된 경매는 스킵 (AuctionService에서 별도 처리)
                 }
-                Long totalBidders = auctionRepository.findAuctionByTotalBidders(auction.getId());
-                Long totalBids = auctionRepository.findAuctionByTotalBids(auction.getId());
+                Long totalBidders = auctionRepository.findTotalBiddersByAuctionId(auction.getId());
+                Long totalBids = auctionRepository.findTotalBidsByAuctionId(auction.getId());
                 // WebSocket으로 경매 상태 업데이트 전송 (남은 시간 포함)
                 bidNotificationService.sendAuctionStatusUpdate(auction, totalBidders, totalBids);
             }

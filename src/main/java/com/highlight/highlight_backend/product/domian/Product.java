@@ -20,9 +20,6 @@ import java.util.List;
  * 상품 엔티티
  * 
  * nafal 경매 시스템의 상품 정보를 저장하는 엔티티입니다.
- * 
- * @author 전우선
- * @since 2025.08.13
  */
 @Entity
 @Table(name = "product")
