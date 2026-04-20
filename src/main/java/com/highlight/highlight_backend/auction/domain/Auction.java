@@ -164,6 +164,8 @@ public class Auction {
     @Column(length = 100)
     private String endReason;
 
+    private boolean isPremium; // 반정규화
+
     /**
      * 경매 설명/메모
      */

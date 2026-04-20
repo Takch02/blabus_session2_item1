@@ -86,7 +86,7 @@ public class AuctionRepositoryImpl implements AuctionRepositoryCustom{
     }
 
     private BooleanExpression isPremium(Boolean isPremium) {
-        return isPremium != null ? auction.product.isPremium.eq(isPremium) : null;
+        return isPremium != null ? auction.isPremium.eq(isPremium) : null;
     }
 
     private BooleanExpression betweenPrice(Long minPrice, Long maxPrice) {
