@@ -7,7 +7,7 @@
 <br>
 
 ## 📌 Project Overview
-- **Phase 1 (해커톤):** 2025.08.12 ~ 2025.08.25 / 5인 팀 (백오피스 및 경매 조회 로직 개발, 프론트 인력 이탈 대응으로 UI/API 연동 전담") 
+- **Phase 1 (해커톤):** 2025.08.12 ~ 2025.08.25 / 6인 팀 (백오피스 및 경매 조회 로직 개발, 프론트 인력 이탈 대응으로 UI/API 연동 전담") 
 - **Phase 2 (아키텍처 리팩토링):** 2025.11 ~ 2026.03 / 1인 개인 (백엔드 아키텍처 고도화)
 - **기술 블로그 (Trouble Shooting):** [벨로그 리팩토링 시리즈](https://velog.io/@takch02/series/%EB%A6%AC%ED%8E%99%ED%86%A0%EB%A7%81)
 
@@ -40,11 +40,11 @@
 
 - **📊 Result:**
   - **Deadlock 원천 차단:** **100개 스레드 규모의 동시성 부하 테스트**를 통해 트랜잭션 분리에 따른 **DeadLock 미발생 검증**
-  - **결과적 일관성 100% 증명:** Mockito를 활용해 **비동기 이벤트의 의도적 부분 실패 상황을 재현** 후 Consumer Log 스케줄러의 개입을 통한 **자동 복구 및 멱등성 유지 로직 검증**
+  - **결과적 일관성 검증:** Mockito를 활용해 **비동기 이벤트의 의도적 부분 실패 상황을 재현** 후 Consumer Log 스케줄러의 개입을 통한 **자동 복구 및 멱등성 유지 로직 검증**
 - **블로그:** : [Consumer Log 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-8Consumer-Log-패턴)
 
 ### 2. Redisson 분산 락 도입을 통한 DB Connection Pool 고갈 해결
-- **🚨 Problem:** 비관적 락(Pessimistic Lock) 기반 입찰 로직이 대기 시간 동안 DB Connection을 계속 점유하여, 단순 경매 조회 등 타 로직까지 마비되는 병목 현상 발생 (조회 1,003ms 지연).
+- **🚨 Problem:** 비관적 락(Pessimistic Lock) 기반 입찰 로직이 대기 시간 동안 DB Connection을 계속 점유하여, 단순 경매 조회 등 타 로직까지 마비되는 병목 현상 발생 (조회 p(95) 1,321ms 지연).
 - **💡 Solution:**
   - **Redisson Pub/Sub 분산 락:** Lock 관리를 애플리케이션(Redis) 계층으로 분리하여 무의미한 DB Connection 점유 제거.
   - 스핀 락 방식의 렛투스(Lettuce) 대신 Pub/Sub 기반의 Redisson을 선택하여 레디스 서버의 CPU 부하 최소화.
@@ -53,11 +53,11 @@
 
 - **📊 Result:**
   - 트랜잭션과 Lock 획득 순서를 분리하여 단 1개의 Connection으로 입찰 처리.
-  - 통합 부하 테스트(K6) 결과, **타 서비스(경매 조회) 응답 9,928ms → 48ms (99.52% 개선), 입찰 응답 10,202ms -> 320ms (96.9% 개선), 전체 TPS 1,102% 향상** (Connection Pool 30개, 비동기 Task Pool 15개로 제한하여 운영 환경 자원 제약을 재현한 로컬 환경 기준)
+  - 통합 부하 테스트(K6) 최대 200VU 결과, **타 서비스(경매 조회) 응답 p(95) 1,649ms → 665ms (59.7% 개선), 입찰 요청 500 에러 해소** (Connection Pool 50개, 비동기 Task Pool 15개로 제한된 환경)
 - **블로그:** [Redisson Distrubution Lock 도입](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-9)
 
 ### 3. 300만 건 대용량 데이터 조회 성능 개선 (Covering Index & Deferred Join)
 - **🚨 Problem:** 기존 `findAll()` 및 `OFFSET` 기반 Paging에서 COUNT 쿼리 병목과 Full Scan으로 인한 응답 지연.
 - **💡 Solution:** No-Offset(Page Slice) 전환으로 COUNT 쿼리 제거. 식별자만 선조회하는 **Covering Index**와 실제 필요한 데이터만 원본에서 빼오는 **Deferred Join** 적용.
-- **📊 Result:** 300만 건 더미 데이터 부하 테스트(K6) 기준 조회 응답 **5,115ms ➡️ 31ms (168배 개선)**. (로컬 환경 기준)
+- **📊 Result:** 300만 건 더미 데이터 K6 ramping-vus 최대 100VU 부하 기준, 응답 p(95) **조회 응답 30s → 62ms (99.2% 개선)**
 - **블로그:** [Covering Index & Deferred Join으로 성능 개선](https://velog.io/@takch02/리팩토링-프로젝트를-리팩토링-하자-5)
