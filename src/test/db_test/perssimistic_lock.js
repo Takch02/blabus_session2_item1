@@ -2,7 +2,7 @@ import http from "k6/http";
 import { check } from "k6";
 import exec from "k6/execution";
 
-const BASE_URL = __ENV.BASE_URL || "http://localhost:8085";
+const BASE_URL = __ENV.BASE_URL || "http://3.39.236.179:8085";
 const URL = `${BASE_URL}/api/loadtest/bids`;
 
 // 예: "2,3,4,5,6"
