@@ -58,10 +58,14 @@ public class BidFacade {
                 lock.unlock(); // 트랜잭션 커밋이 완벽히 끝난 후 락이 풀림!
             }
         }
-        /*User user = userService.getUserOrThrow(userId);
+        /*
+
+        User user = userService.getUserOrThrow(userId);
         Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
         auction.validateBid(request.getBidAmount());
-        return bidService.createBid(request, user, auction);*/
+        return bidService.createBid(request, user, auction);
+
+         */
     }
 
     /**
