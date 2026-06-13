@@ -1,8 +1,8 @@
 package com.highlight.highlight_backend.auction.service;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.event.AuctionStatusChangedEvent;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
-import com.highlight.highlight_backend.product.domian.Product;
 import com.highlight.highlight_backend.auction.dto.AuctionScheduleRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionStartRequestDto;
 import com.highlight.highlight_backend.auction.dto.AuctionUpdateRequestDto;
@@ -10,8 +10,10 @@ import com.highlight.highlight_backend.auction.validator.AuctionValidator;
 import com.highlight.highlight_backend.common.util.TimeUtils;
 import com.highlight.highlight_backend.exception.BusinessException;
 import com.highlight.highlight_backend.exception.AuctionErrorCode;
+import com.highlight.highlight_backend.product.domian.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +35,7 @@ public class AdminAuctionService {
     private final AuctionRepository auctionRepository;
     private final AuctionSchedulerService auctionSchedulerService;
     private final AuctionValidator auctionValidator;
-    private final AuctionCountService auctionCountService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 경매 엔티티 생성 및 저장 (내부용)
@@ -56,11 +58,12 @@ public class AdminAuctionService {
         Auction auction = new Auction();
         auction.addDetail(product, adminId, kstStartTime, kstEndTime, request);
 
-        // 5. Redis에 Page Count 정보 넣기
-        auctionCountService.transition(null, Auction.AuctionStatus.SCHEDULED, product.getCategory());
-        
+        Auction saved = auctionRepository.save(auction);
+        eventPublisher.publishEvent(new AuctionStatusChangedEvent(
+                saved.getId(), null, Auction.AuctionStatus.SCHEDULED, product.getCategory()));
+
         log.info("경매 생성 성공 : {}", product.getProductName());
-        return auctionRepository.save(auction);
+        return saved;
     }
 
     /**
@@ -73,6 +76,7 @@ public class AdminAuctionService {
 
         auctionSchedulerService.cancelScheduledStart(auctionId);
 
+        Auction.AuctionStatus previousStatus = auction.getStatus();
         if (request.isImmediateStart()) {
             auction.startAuction(adminId);
             if (auction.getScheduledEndTime().isBefore(LocalDateTime.now())) {
@@ -87,7 +91,8 @@ public class AdminAuctionService {
             auction.startAuction(adminId);
         }
 
-        auctionCountService.transition(SCHEDULED, IN_PROGRESS, auction.getProduct().getCategory());
+        eventPublisher.publishEvent(new AuctionStatusChangedEvent(
+                auctionId, previousStatus, auction.getStatus(), auction.getCategory()));
         return auction;
     }
 
@@ -99,9 +104,12 @@ public class AdminAuctionService {
         Auction auction = auctionRepository.getOrThrow(auctionId);
         auctionValidator.validateAuctionEnd(auction);
         auctionSchedulerService.cancelScheduledStart(auctionId);
+
+        Auction.AuctionStatus previousStatus = auction.getStatus();
         auction.cancelAuction(adminId, "관리자 강제 중단");
 
-        auctionCountService.transition(IN_PROGRESS, CANCELLED, auction.getProduct().getCategory());
+        eventPublisher.publishEvent(new AuctionStatusChangedEvent(
+                auctionId, previousStatus, auction.getStatus(), auction.getCategory()));
         return auction;
     }
 
@@ -113,9 +121,12 @@ public class AdminAuctionService {
         Auction auction = auctionRepository.getOrThrow(auctionId);
         auctionValidator.validateAuctionEnd(auction);
         auctionSchedulerService.cancelScheduledStart(auctionId);
+
+        Auction.AuctionStatus previousStatus = auction.getStatus();
         auction.endAuction(adminId, endReason);
 
-        auctionCountService.transition(IN_PROGRESS, COMPLETED, auction.getProduct().getCategory());
+        eventPublisher.publishEvent(new AuctionStatusChangedEvent(
+                auctionId, previousStatus, auction.getStatus(), auction.getCategory()));
         return auction;
     }
 

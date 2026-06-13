@@ -37,11 +37,11 @@ public class UserAuctionService {
         Slice<Auction> slice = auctionRepository.searchAuctions(conditionDto, pageable);
 
         // Redis에서 count 조회
-        /*long totalCount = auctionCountService.getCount(
+        long totalCount = auctionCountService.getCount(
                 conditionDto.getStatus(),
                 conditionDto.getCategory()
-        );*/
-        long totalCount = auctionRepository.getCount();
+        );
+        //long totalCount = auctionRepository.getCount();
 
         // DTO 변환
         List<UserAuctionResponseDto> content = slice.getContent()
