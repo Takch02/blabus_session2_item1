@@ -28,7 +28,7 @@ public class UserEventListener {
     @Async //  별도 스레드에서 실행
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) // 커밋 성공 후에만 실행
     public void handleUserUpdate(BidCreatedEvent event) {
-        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), CONSUMER_NAME)) {
+        if (!eventConsumerLogService.claimRunning(event.getOutboxId(), CONSUMER_NAME)) {
             return;
         }
 

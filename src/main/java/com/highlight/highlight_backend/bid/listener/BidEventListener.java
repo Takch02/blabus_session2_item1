@@ -34,7 +34,7 @@ public class BidEventListener {
     public void handleBidNotification(BidCreatedEvent event) {
 
         log.info("🔔 알림 이벤트 수신: AuctionId={}", event.getAuctionId());
-        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), CONSUMER_NAME)) {
+        if (!eventConsumerLogService.claimRunning(event.getOutboxId(), CONSUMER_NAME)) {
             return;
         }
         try {
@@ -50,7 +50,7 @@ public class BidEventListener {
             log.info("[비동기] 입찰 메시지 전송 시작 : {}", event.getBidId());
         } catch (Exception e) {
             log.error("❌ 알림 발송 실패: {}", e.getMessage(), e);
-            eventConsumerLogService.markAsFailed(event.getBidId(), CONSUMER_NAME, e.getMessage());
+            eventConsumerLogService.markAsFailed(event.getOutboxId(), CONSUMER_NAME, e.getMessage());
         }
     }
 }

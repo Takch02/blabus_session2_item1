@@ -1,7 +1,9 @@
 package com.highlight.highlight_backend.common.logEvent;
 
 public enum EventStatus {
-    PENDING,  // 동기 로직에서 대기표를 뽑은 직후의 상태 (스레드 실행 전)
-    SUCCESS,  // 비동기 로직이 에러 없이 완벽하게 처리된 상태
-    FAILED    // 비동기 로직 실행 중 에러가 발생한 상태 (재시도 대상)
+    PENDING,  // 처리 대기 중 (초기 상태)
+    RUNNING,  // claimRunning()으로 처리 권한 획득 후 실행 중
+    SUCCESS,  // 처리 완료
+    FAILED,   // 처리 실패 (재시도 대상)
+    DEAD      // 재시도 횟수 초과, 영구 실패
 }
