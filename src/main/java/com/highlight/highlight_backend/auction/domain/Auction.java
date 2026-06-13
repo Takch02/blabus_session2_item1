@@ -25,7 +25,10 @@ import java.time.LocalDateTime;
  * nafal 경매 시스템의 경매 정보를 저장하는 엔티티입니다.
  */
 @Entity
-@Table(name = "auction")
+@Table(name = "auction", indexes = {
+        @Index(name = "idx_auction_status_start_time", columnList = "status, actual_start_time"),
+        @Index(name = "idx_auction_category_status_start_time", columnList = "category, status, actual_start_time")
+})
 @Getter
 @Setter
 @NoArgsConstructor
