@@ -70,7 +70,7 @@ public class UserAuctionController {
             @Parameter(description = "프리미엄 상품 필터 (true: 프리미엄만, false: 일반만, null: 전체)")
             @RequestParam(required = false) Boolean isPremium,
             @Parameter(description = "경매 상태 (IN_PROGRESS: 진행중, SCHEDULED: 예정, ENDING_SOON: 마감임박)", example = "IN_PROGRESS")
-            @RequestParam(required = false) String status,
+            @RequestParam (required = true) String status,
             @Parameter(description = "페이징 정보 (page, size, sort)")
             Pageable pageable) {
 

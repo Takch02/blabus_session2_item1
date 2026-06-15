@@ -4,21 +4,21 @@ import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.product.domian.Product;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuctionCountService {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final AuctionRepository auctionRepository;
 
     private static final String COUNT_KEY_PREFIX = "auction:count:";
+    private static final long TTL_HOURS = 1; // 폴백용 TTL (AFTER_COMMIT 갱신 실패 시 자동 복구)
 
     // 타 service에서 사용할 메서드
     public void transition(
@@ -29,25 +29,21 @@ public class AuctionCountService {
         if (to != null)   increment(to, category);
     }
 
-    // 카운트 증가
+    // 카운트 증가 — 신규 키(INCR 결과 == 1)면 TTL 설정
     public void increment(Auction.AuctionStatus status,
                           Product.Category category) {
-        redisTemplate.opsForValue()
-                .increment(statusKey(status));
-        redisTemplate.opsForValue()
-                .increment(statusCategoryKey(status, category));
+        incrementWithTtl(statusKey(status));
+        incrementWithTtl(statusCategoryKey(status, category));
     }
 
     // 카운트 감소
-    public void decrement(Auction.AuctionStatus status, 
-                         Product.Category category) {
-        redisTemplate.opsForValue()
-                .decrement(statusKey(status));
-        redisTemplate.opsForValue()
-                .decrement(statusCategoryKey(status, category));
+    public void decrement(Auction.AuctionStatus status,
+                          Product.Category category) {
+        redisTemplate.opsForValue().decrement(statusKey(status));
+        redisTemplate.opsForValue().decrement(statusCategoryKey(status, category));
     }
 
-    // 카운트 조회 (Redis 미스 시 DB 폴백)
+    // 카운트 조회 (Redis 미스 시 DB 폴백 후 1시간 TTL로 캐싱)
     public long getCount(String status, String category) {
         String key = StringUtils.hasText(category)
                 ? statusCategoryKey(
@@ -58,7 +54,6 @@ public class AuctionCountService {
         String count = redisTemplate.opsForValue().get(key);
 
         if (count == null) {
-            // Redis 미스 → DB에서 조회 후 캐싱
             long dbCount = StringUtils.hasText(category)
                     ? auctionRepository.countByStatusAndCategory(
                         Auction.AuctionStatus.valueOf(status),
@@ -67,44 +62,33 @@ public class AuctionCountService {
                         Auction.AuctionStatus.valueOf(status));
 
             redisTemplate.opsForValue()
-                    .set(key, String.valueOf(dbCount));
+                    .set(key, String.valueOf(dbCount), TTL_HOURS, TimeUnit.HOURS);
             return dbCount;
         }
-        return Long.parseLong(count);
+        // DECR가 0 밑으로 내려갈 수 있어 하한 보정
+        return Math.max(0, Long.parseLong(count));
     }
 
-    // 키 생성
+    public void reset(Auction.AuctionStatus status, Product.Category category) {
+        redisTemplate.delete(statusKey(status));
+        redisTemplate.delete(statusCategoryKey(status, category));
+    }
+
+    // INCR 결과가 1이면 키가 새로 생성된 것 → TTL 설정
+    private void incrementWithTtl(String key) {
+        Long result = redisTemplate.opsForValue().increment(key);
+        if (Long.valueOf(1).equals(result)) {
+            redisTemplate.expire(key, TTL_HOURS, TimeUnit.HOURS);
+        }
+    }
+
     private String statusKey(Auction.AuctionStatus status) {
         return COUNT_KEY_PREFIX + status.name();
     }
 
     private String statusCategoryKey(Auction.AuctionStatus status,
                                      Product.Category category) {
-        return COUNT_KEY_PREFIX + status.name() 
+        return COUNT_KEY_PREFIX + status.name()
                 + ":" + category.name();
-    }
-
-    // 매일 새벽 3시 DB와 동기화 (정합성 보장)
-    @Scheduled(cron = "0 0 3 * * *")
-    public void syncCountCache() {
-        for (Auction.AuctionStatus status : Auction.AuctionStatus.values()) {
-            long statusCount = auctionRepository.countByStatus(status);
-            redisTemplate.opsForValue()
-                    .set(statusKey(status), String.valueOf(statusCount));
-
-            for (Product.Category category : Product.Category.values()) {
-                long count = auctionRepository
-                        .countByStatusAndCategory(status, category);
-                redisTemplate.opsForValue()
-                        .set(statusCategoryKey(status, category),
-                             String.valueOf(count));
-            }
-        }
-        log.info("경매 카운트 캐시 동기화 완료");
-    }
-
-    public void reset(Auction.AuctionStatus status, Product.Category category) {
-        redisTemplate.delete(statusKey(status));
-        redisTemplate.delete(statusCategoryKey(status, category));
     }
 }

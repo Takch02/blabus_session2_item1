@@ -1,6 +1,8 @@
 package com.highlight.highlight_backend.auction.listener;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
+import com.highlight.highlight_backend.auction.event.AuctionStatusChangedEvent;
+import com.highlight.highlight_backend.auction.service.AuctionCountService;
 import com.highlight.highlight_backend.bid.event.BidCreatedEvent;
 import com.highlight.highlight_backend.auction.notification.AuctionWebSocketNotifier;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
@@ -22,6 +24,7 @@ public class AuctionEventListener {
     private final AuctionWebSocketNotifier auctionWebSocketNotifier;
     private final EventConsumerLogService eventConsumerLogService;
     private final AuctionRepository auctionRepository;
+    private final AuctionCountService auctionCountService;
     private static final String auctionUsernameUpdate = "AUCTION_USERNAME_UPDATE";
     private static final String auctionNotiBoardCast = "AUCTION_NOTI_BOARDCAST";
 
@@ -70,6 +73,26 @@ public class AuctionEventListener {
 
         } catch (Exception e) {
             log.error("경매 최고가 갱신 실패. 배치 재시도 대상이 됩니다. auctionId={}", event.getAuctionId(), e);
+        }
+    }
+
+    /**
+     * 경매 상태 변경 시 카운트 캐시 갱신 (AFTER_COMMIT)
+     * 트랜잭션 커밋 확정 후에만 캐시를 갱신해 정합성 보장
+     * TTL 1시간이므로 TTL 만료 시 자동으로 DB 폴백으로 복구됨
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleAuctionStatusChanged(AuctionStatusChangedEvent event) {
+        try {
+            auctionCountService.transition(event.getPreviousStatus(), event.getNewStatus(), event.getCategory());
+            log.debug("[캐시 갱신] 경매 상태 변경: AuctionId={}, {} -> {}",
+                    event.getAuctionId(), event.getPreviousStatus(), event.getNewStatus());
+        } catch (Exception e) {
+            log.error("경매 카운트 캐시 갱신 실패. 캐시 삭제 후 다음 조회 시 DB 폴백으로 복구됩니다. AuctionId={}", event.getAuctionId(), e);
+            auctionCountService.reset(event.getNewStatus(), event.getCategory());
+            if (event.getPreviousStatus() != null) {
+                auctionCountService.reset(event.getPreviousStatus(), event.getCategory());
+            }
         }
     }
 
