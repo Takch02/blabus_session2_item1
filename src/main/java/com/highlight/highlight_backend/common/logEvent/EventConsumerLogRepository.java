@@ -49,8 +49,9 @@ public interface EventConsumerLogRepository extends JpaRepository<EventConsumerL
 
     // 여러 로그의 retryCount를 한 번의 쿼리로 일괄 증가
     // flushAutomatically: 벌크 쿼리 전 1차 캐시 flush → markAsDead() 등 선행 변경이 DB에 반영된 후 실행됨
+    // clearAutomatically 불필요: 벌크 쿼리 이후 엔티티 재조회 없으므로 트랜잭션 종료 시 자연 소멸
     @Transactional
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE EventConsumerLog e SET e.retryCount = e.retryCount + 1 WHERE e.id IN :ids")
     void bulkIncrementRetryCount(@Param("ids") List<Long> ids);
 }
