@@ -12,18 +12,14 @@ import java.util.Optional;
 
 public interface EventConsumerLogRepository extends JpaRepository<EventConsumerLog, Long> {
 
-    // 1. 비동기 리스너가 자신의 로그를 찾을 때 사용
     Optional<EventConsumerLog> findByEventIdAndConsumerName(Long eventId, String consumerName);
 
-    // 2. 스케줄러가 재시도 대상을 찾을 때 사용
-    // 상태가 PENDING이거나 FAILED인 것 중, updatedAt이 특정 시간(예: 3분 전) 이전인 데이터만 조회
     List<EventConsumerLog> findAllByStatusInAndUpdatedAtBefore(List<EventStatus> statuses, LocalDateTime cutoffTime);
 
     @Transactional
-    @Modifying(clearAutomatically = true) // UPDATE/DELETE 쿼리 실행 시 필수!
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE EventConsumerLog e SET e.updatedAt = :time WHERE e.id = :id")
     void forceUpdateUpdatedAt(@Param("id") Long id, @Param("time") LocalDateTime time);
-
 
     @Query("SELECT ecl.consumerName FROM EventConsumerLog ecl " +
             "WHERE ecl.eventId = :eventId AND ecl.consumerName IN :consumerNames")
@@ -31,4 +27,31 @@ public interface EventConsumerLogRepository extends JpaRepository<EventConsumerL
             @Param("eventId") Long eventId,
             @Param("consumerNames") List<String> consumerNames
     );
+
+    // PENDING/FAILED 상태인 로그를 RUNNING으로 원자적으로 전환 (처리 권한 획득)
+    // 반환값 1 = 권한 획득 성공, 0 = 다른 스레드가 이미 처리 중이거나 SUCCESS
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE EventConsumerLog e SET e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.RUNNING, " +
+           "e.updatedAt = CURRENT_TIMESTAMP " +
+           "WHERE e.eventId = :eventId AND e.consumerName = :consumerName " +
+           "AND e.status IN (com.highlight.highlight_backend.common.logEvent.EventStatus.PENDING, " +
+           "com.highlight.highlight_backend.common.logEvent.EventStatus.FAILED)")
+    int claimAsRunning(@Param("eventId") Long eventId, @Param("consumerName") String consumerName);
+
+    // 타임아웃된 RUNNING 상태(스레드 증발)를 FAILED로 리셋
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE EventConsumerLog e SET e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.FAILED " +
+           "WHERE e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.RUNNING " +
+           "AND e.updatedAt < :cutoffTime")
+    int resetStalledRunning(@Param("cutoffTime") LocalDateTime cutoffTime);
+
+    // 여러 로그의 retryCount를 한 번의 쿼리로 일괄 증가
+    // flushAutomatically: 벌크 쿼리 전 1차 캐시 flush → markAsDead() 등 선행 변경이 DB에 반영된 후 실행됨
+    // clearAutomatically 불필요: 벌크 쿼리 이후 엔티티 재조회 없으므로 트랜잭션 종료 시 자연 소멸
+    @Transactional
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE EventConsumerLog e SET e.retryCount = e.retryCount + 1 WHERE e.id IN :ids")
+    void bulkIncrementRetryCount(@Param("ids") List<Long> ids);
 }

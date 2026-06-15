@@ -78,4 +78,10 @@ public class EventConsumerLog {
     public void increaseRetryCount() {
         this.retryCount++;
     }
+
+    // 재시도 횟수 초과 시 영구 실패 처리
+    public void markAsDead() {
+        this.status = EventStatus.DEAD;
+        this.errorMessage = "최대 재시도 횟수 초과";
+    }
 }
