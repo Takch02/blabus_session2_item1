@@ -31,7 +31,7 @@ public class AuctionEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNicknameUpdate(UserNicknameUpdateEvent event) {
-        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), auctionUsernameUpdate)) {
+        if (!eventConsumerLogService.claimRunning(event.getOutboxId(), auctionUsernameUpdate)) {
             return;
         }
 
@@ -81,7 +81,7 @@ public class AuctionEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleAuctionWebSocketNotification(BidCreatedEvent event) {
         log.info("🔔 [경매 모듈] 웹소켓 방송 이벤트 수신: AuctionId={}", event.getAuctionId());
-        if (eventConsumerLogService.isAlreadySuccess(event.getOutboxId(), auctionNotiBoardCast)) {
+        if (!eventConsumerLogService.claimRunning(event.getOutboxId(), auctionNotiBoardCast)) {
             return;
         }
 

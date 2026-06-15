@@ -76,6 +76,10 @@ public class EventRetryScheduler {
 
             if (eligibleLogs.isEmpty()) continue;
 
+            // 재발행 시도 전에 retryCount 일괄 증가 — outbox 없음/역직렬화 실패도 시도 횟수에 포함
+            logRepository.bulkIncrementRetryCount(
+                    eligibleLogs.stream().map(EventConsumerLog::getId).toList());
+
             OutboxEvent outbox = outboxMap.get(eventId);
             if (outbox == null) {
                 log.error("❌ Outbox를 찾을 수 없음 — EventId={}", eventId);
@@ -85,8 +89,6 @@ public class EventRetryScheduler {
             try {
                 Class<?> eventClass = Class.forName(outbox.getEventType());
                 Object eventObject = objectMapper.readValue(outbox.getPayload(), eventClass);
-
-                eligibleLogs.forEach(EventConsumerLog::increaseRetryCount);
 
                 // 이벤트 재발행 (각 Listener에서 claimRunning()으로 중복 처리 차단)
                 eventPublisher.publishEvent(eventObject);

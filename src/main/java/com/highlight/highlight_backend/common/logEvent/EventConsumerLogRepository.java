@@ -32,7 +32,8 @@ public interface EventConsumerLogRepository extends JpaRepository<EventConsumerL
     // 반환값 1 = 권한 획득 성공, 0 = 다른 스레드가 이미 처리 중이거나 SUCCESS
     @Transactional
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE EventConsumerLog e SET e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.RUNNING " +
+    @Query("UPDATE EventConsumerLog e SET e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.RUNNING, " +
+           "e.updatedAt = CURRENT_TIMESTAMP " +
            "WHERE e.eventId = :eventId AND e.consumerName = :consumerName " +
            "AND e.status IN (com.highlight.highlight_backend.common.logEvent.EventStatus.PENDING, " +
            "com.highlight.highlight_backend.common.logEvent.EventStatus.FAILED)")
@@ -45,4 +46,10 @@ public interface EventConsumerLogRepository extends JpaRepository<EventConsumerL
            "WHERE e.status = com.highlight.highlight_backend.common.logEvent.EventStatus.RUNNING " +
            "AND e.updatedAt < :cutoffTime")
     int resetStalledRunning(@Param("cutoffTime") LocalDateTime cutoffTime);
+
+    // 여러 로그의 retryCount를 한 번의 쿼리로 일괄 증가
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE EventConsumerLog e SET e.retryCount = e.retryCount + 1 WHERE e.id IN :ids")
+    void bulkIncrementRetryCount(@Param("ids") List<Long> ids);
 }
