@@ -71,6 +71,18 @@ public class BidService {
     }
 
     /**
+     * 비관락으로 경매를 조회하고 입찰 (Redis 장애 폴백용)
+     * SELECT FOR UPDATE가 트랜잭션 내에서 유지되어야 하므로 별도 메서드로 분리
+     */
+    @Transactional
+    public BidResponseDto createBidWithPessimisticLock(BidCreateRequestDto request, User user,
+                                                       com.highlight.highlight_backend.auction.service.UserAuctionService userAuctionService) {
+        Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
+        auction.validateBid(request.getBidAmount());
+        return createBid(request, user, auction);
+    }
+
+    /**
      * 입찰 참여
      * 변경 전 lock 순서 : Auction lock -> User lock -> 둘 다 Unlock
      */
