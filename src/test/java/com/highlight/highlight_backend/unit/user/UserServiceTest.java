@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.user;
+package com.highlight.highlight_backend.unit.user;
 
 import com.highlight.highlight_backend.common.util.JwtUtil;
 import com.highlight.highlight_backend.common.verification.service.VerificationService;

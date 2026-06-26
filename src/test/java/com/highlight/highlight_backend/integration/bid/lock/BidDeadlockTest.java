@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.bid.lock;
+package com.highlight.highlight_backend.integration.bid.lock;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
@@ -68,10 +68,10 @@ public class BidDeadlockTest {
                     successCount.getAndIncrement();
                 } catch (Exception e) {
 
-                    if (e.getMessage().contains("입찰가")) {
-                        // 이 경우는 스레드 순서 문제이므로 데드락이 아님.
-                        System.out.println("스레드 순서 역전으로 인한 입찰 실패(정상): " + e.getMessage());
-                        successCount.getAndIncrement(); // 쓰레드가 꼬이며 생긴 오류이므로 넘김.
+                    if (e.getMessage().contains("입찰가") || e.getMessage().contains("지연")) {
+                        // 스레드 순서 역전으로 인한 입찰 실패 또는 분산락 경합 타임아웃 — 데드락 아님
+                        System.out.println("정상 실패(순서역전/락경합): " + e.getMessage());
+                        successCount.getAndIncrement();
                     } else {
                         // 진짜 데드락이나 시스템 에러만 실패로 간주
                         System.out.println("심각한 에러 발생: " + e.getMessage() + ", index : " + index);

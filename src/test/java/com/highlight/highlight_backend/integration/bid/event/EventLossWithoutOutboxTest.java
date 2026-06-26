@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.bid.event;
+package com.highlight.highlight_backend.integration.bid.event;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
@@ -40,13 +40,20 @@ public class EventLossWithoutOutboxTest {
     private UserService userService;
 
 
+    private BigDecimal nextValidPrice(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId).orElseThrow();
+        BigDecimal current = auction.getCurrentHighestBid() != null
+                ? auction.getCurrentHighestBid() : auction.getStartPrice();
+        return current.add(auction.getMinimumBid());
+    }
+
     @Test
     @DisplayName("위험 증명: Outbox 없이 리스너가 실패하면, 입찰은 성공하지만 유저 카운트는 누락된다 (데이터 불일치)")
     void testLogicEventLoss() {
         // 1. [Given] 초기 상태
         Long userId = 1L;
         Long auctionId = 2L;
-        BigDecimal bidAmount = BigDecimal.valueOf(110000); // 새로운 입찰가
+        BigDecimal bidAmount = nextValidPrice(auctionId);
 
         User userBefore = userRepository.findById(userId).orElseThrow();
         Long initialCount = userBefore.getParticipationCount();
