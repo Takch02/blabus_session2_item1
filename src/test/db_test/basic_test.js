@@ -22,10 +22,6 @@ export const options = {
     },
 };
 
-// =============================
-// 🔧 설정값 (여기만 바꾸면 됨)
-// =============================
-const BASE_URL = 'http://localhost:8085/api/public/auctions';
 
 // 테스트 모드 (여기 바꿔가면서 테스트)
 const TEST_MODE = 'mixed';
@@ -65,7 +61,7 @@ export function mixedScenario() {
         }
     }
 
-    const url = `http://3.39.236.179:8085/api/public/auctions/?isPremium=false&status=IN_PROGRESS&page=${page}&size=16`;
+    const url = `http://43.201.85.125:8085/api/public/auctions/?isPremium=false&status=IN_PROGRESS&page=${page}&size=16`;
 
     const res = http.get(url);
 

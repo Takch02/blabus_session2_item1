@@ -52,7 +52,8 @@ export function bidding() {
     const currentIter = exec.scenario.iterationInTest;
     const bidAmount = 110000 + (currentIter * 1000);
     const userId = (exec.vu.idInTest % 100) + 10;
-    const hotspotAuctionId = Math.floor(Math.random() * 3) + 2;
+    //const hotspotAuctionId = Math.floor(Math.random() * 3) + 2;
+    const hotspotAuctionId = 2;
 
     const payload = JSON.stringify({
         auctionId: hotspotAuctionId,
@@ -63,7 +64,7 @@ export function bidding() {
 
     const params = { headers: { 'Content-Type': 'application/json', 'X-User-Id': userId } };
 
-    const res = http.post(`http://localhost:8085/api/loadtest/bids`, payload, params);
+    const res = http.post(`http://43.201.85.125:8085/api/loadtest/bids`, payload, params);
 
     bidDuration.add(res.timings.duration);
 
@@ -89,7 +90,7 @@ export function bidding() {
 
 export function viewing() {
     const targetAuctionId = Math.floor(Math.random() * 10) + 2;
-    const res = http.get(`http://localhost:8085/api/public/products/${targetAuctionId}`);
+    const res = http.get(`http://43.201.85.125:8085/api/public/products/${targetAuctionId}`);
 
     viewDuration.add(res.timings.duration);
 
