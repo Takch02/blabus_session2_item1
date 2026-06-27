@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.admin.auction;
+package com.highlight.highlight_backend.integration.admin.auction;
 
 import com.highlight.highlight_backend.admin.domain.Admin;
 import com.highlight.highlight_backend.admin.repository.AdminRepository;

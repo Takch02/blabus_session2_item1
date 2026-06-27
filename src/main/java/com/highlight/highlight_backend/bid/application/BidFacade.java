@@ -37,35 +37,47 @@ public class BidFacade {
      * 입찰 생성 UseCase
      * 트랜잭션을 여기서 시작하여, 락 획득부터 입찰 저장까지 하나의 작업 단위로 묶음
      */
-    //@Transactional
     public BidResponseDto createBidFacade(BidCreateRequestDto request, Long userId) {
         User user = userService.getUserOrThrow(userId);
+
+        if (isRedisAvailable()) {
+            return createBidWithDistributedLock(request, user);
+        } else {
+            log.warn("Redis 장애 감지 — 비관락으로 폴백: auctionId={}", request.getAuctionId());
+            return createBidWithPessimisticLock(request, user);
+        }
+    }
+
+    private boolean isRedisAvailable() {
+        try {
+            return redissonClient.getNodesGroup().pingAll();
+        } catch (Exception e) {
+            log.warn("Redis 연결 확인 실패: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private BidResponseDto createBidWithDistributedLock(BidCreateRequestDto request, User user) {
         String lockKey = "LOCK_AUCTION_" + request.getAuctionId();
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
             boolean acquired = lock.tryLock(500, TimeUnit.MILLISECONDS);
-            if (!acquired) throw new BusinessException(AuctionErrorCode.ALREADY_HAVE_LOCK);  // Lock 대기 예외
+            if (!acquired) throw new BusinessException(AuctionErrorCode.ALREADY_HAVE_LOCK);
             Auction auction = userAuctionService.getAuctionOrThrow(request.getAuctionId());
             auction.validateBid(request.getBidAmount());
             return bidService.createBid(request, user, auction);
 
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Interrupt flag = false 로 깨어나게 되므로 다시 true로 수정
-            throw new BusinessException(AuctionErrorCode.AUCTION_LOCK_INTERRUPT);  // 500 에러
+            Thread.currentThread().interrupt();
+            throw new BusinessException(AuctionErrorCode.AUCTION_LOCK_INTERRUPT);
         } finally {
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock(); // 트랜잭션 커밋이 완벽히 끝난 후 락이 풀림!
-            }
+            if (lock.isHeldByCurrentThread()) lock.unlock();
         }
-        /*
+    }
 
-        User user = userService.getUserOrThrow(userId);
-        Auction auction = userAuctionService.getAuctionWithLockOrThrow(request.getAuctionId());
-        auction.validateBid(request.getBidAmount());
-        return bidService.createBid(request, user, auction);
-
-         */
+    private BidResponseDto createBidWithPessimisticLock(BidCreateRequestDto request, User user) {
+        return bidService.createBidWithPessimisticLock(request, user, userAuctionService);
     }
 
     /**

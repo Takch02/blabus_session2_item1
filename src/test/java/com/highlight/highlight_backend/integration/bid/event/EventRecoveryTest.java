@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.bid.event;
+package com.highlight.highlight_backend.integration.bid.event;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
@@ -14,6 +14,7 @@ import com.highlight.highlight_backend.user.domain.User;
 import com.highlight.highlight_backend.user.repository.UserRepository;
 import com.highlight.highlight_backend.user.service.UserService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +45,23 @@ public class EventRecoveryTest {
     @MockitoSpyBean
     private UserService userService;
 
+    @BeforeEach
+    void setUp() {
+        logRepository.deleteAllInBatch();
+        outboxRepository.deleteAllInBatch();
+    }
+
     @AfterEach
     void tearDown() {
         logRepository.deleteAllInBatch();
         outboxRepository.deleteAllInBatch();
+    }
+
+    private BigDecimal nextValidPrice(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId).orElseThrow();
+        BigDecimal current = auction.getCurrentHighestBid() != null
+                ? auction.getCurrentHighestBid() : auction.getStartPrice();
+        return current.add(auction.getMinimumBid());
     }
 
     @Test
@@ -56,7 +70,7 @@ public class EventRecoveryTest {
         // 1. [Given] 초기 상태 셋팅
         Long userId = 1L;
         Long auctionId = 2L;
-        BigDecimal bidAmount = BigDecimal.valueOf(114000);
+        BigDecimal bidAmount = nextValidPrice(auctionId);
 
         User userBefore = userRepository.findById(userId).orElseThrow();
         Long initialCount = userBefore.getParticipationCount();

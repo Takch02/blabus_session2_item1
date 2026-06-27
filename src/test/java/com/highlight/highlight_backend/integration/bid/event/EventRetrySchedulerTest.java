@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.bid.event;
+package com.highlight.highlight_backend.integration.bid.event;
 
 import com.highlight.highlight_backend.auction.repository.AuctionRepository;
 import com.highlight.highlight_backend.bid.application.BidFacade;

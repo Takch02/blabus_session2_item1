@@ -1,4 +1,4 @@
-package com.highlight.highlight_backend.bid.event;
+package com.highlight.highlight_backend.integration.bid.event;
 
 import com.highlight.highlight_backend.auction.domain.Auction;
 import com.highlight.highlight_backend.auction.notification.AuctionWebSocketNotifier;
@@ -37,13 +37,20 @@ public class EventSequentialTest {
     @MockitoSpyBean
     private AuctionWebSocketNotifier auctionWebSocketNotifier;
 
+    private BigDecimal nextValidPrice(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId).orElseThrow();
+        BigDecimal current = auction.getCurrentHighestBid() != null
+                ? auction.getCurrentHighestBid() : auction.getStartPrice();
+        return current.add(auction.getMinimumBid());
+    }
+
     @Test
     @DisplayName("실패 시뮬레이션: 리스너가 실패(서버 다운 등)해도 입찰은 롤백되지 않아 데이터 정합성이 깨진다")
     void testEventLossConsistency() throws InterruptedException {
         // 1. [Given] 상황 세팅
         Long auctionId = 2L; // 테스트 DB에 있는 ID
         Long userId = 1L;    // 테스트 DB에 있는 ID
-        Long test = 139000L;
+        BigDecimal test = nextValidPrice(auctionId);
         
         // 유저의 초기 참여 횟수 저장
         User userBefore = userRepository.findById(userId).orElseThrow();
@@ -56,7 +63,7 @@ public class EventSequentialTest {
         // 3. [When] 입찰 시도 (메인 트랜잭션)
         try {
             bidFacade.createBidFacade(new BidCreateRequestDto(
-                    auctionId, BigDecimal.valueOf(test), false, BigDecimal.valueOf(1000)
+                    auctionId, test, false, BigDecimal.valueOf(1000)
             ), userId);
         } catch (Exception e) {
             System.out.println("[실패] : 비즈니스 로직 오류. " + e.getMessage());
@@ -70,7 +77,7 @@ public class EventSequentialTest {
         // (입찰가가 갱신되었는지 확인)
         Auction auction = auctionRepository.findById(auctionId).orElseThrow();
         assertThat(auction.getCurrentHighestBid())
-                .isEqualByComparingTo(BigDecimal.valueOf(test));
+                .isEqualByComparingTo(test);
 
         // (2) 유저 참여 횟수 탐색
         User userAfter = userRepository.findById(userId).orElseThrow();
