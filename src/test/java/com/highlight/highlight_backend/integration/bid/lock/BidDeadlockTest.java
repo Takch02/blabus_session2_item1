@@ -42,15 +42,16 @@ public class BidDeadlockTest {
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
-        AtomicInteger successCount = new AtomicInteger();
-        AtomicInteger failCount = new AtomicInteger();
+        AtomicInteger bidSuccessCount = new AtomicInteger();    // 실제 입찰 성공
+        AtomicInteger lockTimeoutCount = new AtomicInteger();   // 분산락 경합 타임아웃 (정상)
+        AtomicInteger failCount = new AtomicInteger();          // 진짜 에러 (데드락 등)
         for (int i = 0; i < numberOfThreads; i++) {
             final int index = i;
             String safePhoneNumber = "0109999888" + index;
             BigDecimal currentPrice = BigDecimal.valueOf(bidPrice.addAndGet(1100));
             UserUpdateRequestDto dynamicUpdateDto = new UserUpdateRequestDto(
-                    "닉네임" + index,          // 닉네임0, 닉네임1... 중복 안 됨
-                    safePhoneNumber,     // 전화번호도 중복 안 됨
+                    "닉네임" + index,
+                    safePhoneNumber,
                     true,
                     true
             );
@@ -60,18 +61,21 @@ public class BidDeadlockTest {
                     if (index % 2 == 0) {
                         bidFacade.createBidFacade(new BidCreateRequestDto(2L, currentPrice, false,
                                 BigDecimal.valueOf(1100)), 1L);
-                    } 
+                    }
                     // 홀수 스레드: 유저 정보 수정 (User Lock -> Auction Lock)
                     else {
                         userService.updateUser(1L, dynamicUpdateDto);
                     }
-                    successCount.getAndIncrement();
+                    bidSuccessCount.getAndIncrement();
                 } catch (Exception e) {
-
-                    if (e.getMessage().contains("입찰가") || e.getMessage().contains("지연")) {
-                        // 스레드 순서 역전으로 인한 입찰 실패 또는 분산락 경합 타임아웃 — 데드락 아님
-                        System.out.println("정상 실패(순서역전/락경합): " + e.getMessage());
-                        successCount.getAndIncrement();
+                    if (e.getMessage().contains("입찰가")) {
+                        // 스레드 순서 역전으로 인한 입찰가 미달 — 데드락 아님
+                        System.out.println("정상 실패(순서역전): " + e.getMessage());
+                        bidSuccessCount.getAndIncrement();
+                    } else if (e.getMessage().contains("지연")) {
+                        // 분산락 경합 타임아웃 — 데드락 아님, 별도 집계
+                        System.out.println("정상 실패(락경합): " + e.getMessage());
+                        lockTimeoutCount.getAndIncrement();
                     } else {
                         // 진짜 데드락이나 시스템 에러만 실패로 간주
                         System.out.println("심각한 에러 발생: " + e.getMessage() + ", index : " + index);
@@ -85,8 +89,11 @@ public class BidDeadlockTest {
 
         latch.await(); // 모든 스레드가 끝날 때까지 대기
 
-        // 검증: 실패(데드락)가 하나도 없어야 함
-        assertThat(failCount.get()).isEqualTo(0); 
-        assertThat(successCount.get()).isEqualTo(numberOfThreads);
+        // 데드락이 없어야 함
+        assertThat(failCount.get()).isEqualTo(0);
+        // 전체 스레드가 빠짐없이 처리되어야 함
+        assertThat(bidSuccessCount.get() + lockTimeoutCount.get()).isEqualTo(numberOfThreads);
+        // 최소 1건은 실제로 입찰이 진행되었어야 함 (아무것도 안 된 상태가 아님을 보장)
+        assertThat(bidSuccessCount.get()).isGreaterThan(0);
     }
 }
